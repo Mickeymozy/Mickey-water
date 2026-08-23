@@ -39,4 +39,22 @@ const originalRender=render;render=function(){originalRender();const search=$('s
 async function deleteRecordById(id){const record=state.records.find(item=>item._id===id);if(!record||!confirm(`Futa bill ya ${record.customerName}?`))return;const res=await originalFetch(`/api/records/${id}`,{method:'DELETE',headers:{Authorization:`Bearer ${token}`}});const data=await res.json();if(!res.ok)return toast(data.message||'Bill haikufutwa');toast('Bill imefutwa');await load()};document.getElementById('previousDebt').addEventListener('input',updatePreview);updatePreview();render();
 async function deleteAccount(){if(!confirm('Futa akaunti yako pamoja na records zote? Hatua hii haiwezi kurudishwa.'))return;const res=await originalFetch('/api/auth/me',{method:'DELETE',headers:{Authorization:`Bearer ${token}`}});const data=await res.json();if(!res.ok)return toast(data.message||'Akaunti haikufutwa');localStorage.clear();location.href='index.html'}
 const accountButton=document.createElement('button');accountButton.className='logout';accountButton.textContent='Futa akaunti';accountButton.style.color='#a34c17';accountButton.style.marginLeft='6px';accountButton.onclick=deleteAccount;document.querySelector('.topbar').insertBefore(accountButton,document.querySelector('.topbar').lastElementChild);
+<style>
+  .topbar{padding-bottom:18px;border-bottom:1px solid var(--line)}
+  .toolbar{align-items:center}.toolbar .date-filter{max-width:150px;min-width:125px}
+  .utility-bar{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin:-8px 0 18px}
+  .utility-button{border:1px solid var(--line);background:var(--white);color:var(--teal-dark);padding:9px 12px;border-radius:3px;font:700 .72rem Arial,sans-serif}
+  .utility-button:hover{background:#f0f5e7}
+  .record{position:relative}.invoice{font:700 .68rem Arial,sans-serif;color:var(--teal);letter-spacing:.04em;margin-top:4px}
+  .action.delete{color:#a34c17;border-color:#efc8b7}
+  @media(max-width:520px){.utility-bar{justify-content:stretch}.utility-button{flex:1}.toolbar .date-filter{max-width:none;flex:1}}
+</style>
+<script>
+const historyPanel=document.querySelectorAll('.panel')[1];
+const utilityBar=document.createElement('div');utilityBar.className='utility-bar';utilityBar.innerHTML='<button class="utility-button" id="exportCsv">Pakua CSV</button><button class="utility-button" id="printSummary">Print muhtasari</button>';historyPanel.insertBefore(utilityBar,historyPanel.querySelector('.toolbar'));
+const dateFilter=document.createElement('input');dateFilter.type='date';dateFilter.className='date-filter';dateFilter.title='Onesha bills za tarehe hii';dateFilter.oninput=render;historyPanel.querySelector('.toolbar').append(dateFilter);
+const oldRender=render;render=function(){oldRender();const search=$('search').value.toLowerCase();const visible=state.records.filter(r=>(state.filter==='all'||(state.filter==='paid'?r.status==='Imelipwa':r.status!=='Imelipwa'))&&(`${r.customerName} ${r.phone}`.toLowerCase().includes(search))&&(dateFilter.value?r.date.slice(0,10)===dateFilter.value:true));document.querySelectorAll('.record').forEach((item,index)=>{const record=visible[index];if(!record){item.style.display='none';return}const invoice=document.createElement('div');invoice.className='invoice';invoice.textContent=record.invoiceNumber||'Invoice ya zamani';item.querySelector('.record-main').after(invoice)})};
+function exportCsv(){const rows=[['Invoice','Mteja','Simu','Units','Deni la nyuma','Jumla','Hali','Tarehe'],...state.records.map(r=>[r.invoiceNumber||'',r.customerName,r.phone,r.units,r.previousDebt||0,r.total,r.status,new Date(r.date).toISOString().slice(0,10)])];const csv=rows.map(row=>row.map(value=>`"${String(value).replace(/"/g,'""')}"`).join(',')).join('\n');const link=document.createElement('a');link.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));link.download=`mickey-water-bills-${new Date().toISOString().slice(0,10)}.csv`;link.click();URL.revokeObjectURL(link.href)}
+function printSummary(){const printable=state.records.map(r=>`${r.invoiceNumber||'Bill'} | ${r.customerName} | ${r.status} | ${money(r.total)}`).join('\n');const win=window.open('','_blank');if(!win)return;win.document.write(`<pre style="font:14px Arial;line-height:1.8;padding:30px">MICKEY WATER\nBILLS SUMMARY\n${new Date().toLocaleDateString('sw-TZ')}\n\n${printable||'Hakuna records'}</pre>`);win.print();win.close()}
+document.getElementById('exportCsv').onclick=exportCsv;document.getElementById('printSummary').onclick=printSummary;
 </script></body></html>

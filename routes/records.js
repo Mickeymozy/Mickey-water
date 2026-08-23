@@ -5,6 +5,10 @@ const { authMiddleware } = require('../middleware/auth');
 
 const router = express.Router();
 
+function createInvoiceNumber() {
+  return `MW-${new Date().getFullYear()}-${Date.now().toString(36).toUpperCase()}`;
+}
+
 function audit(req, action, recordId, metadata = {}) {
   return AuditLog.create({ userId: req.user.userId, action, recordId, metadata });
 }
@@ -32,6 +36,7 @@ router.post('/', async (req, res) => {
     const currentBill = units * Number(pricePerUnit);
     const total = currentBill + Number(previousDebt);
     const record = new Record({
+      invoiceNumber: createInvoiceNumber(),
       customerName,
       phone,
       prevReading,
