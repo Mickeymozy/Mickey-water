@@ -1,6 +1,6 @@
 const express = require('express');
 const Record = require('../models/Record');
-const { authMiddleware, adminMiddleware } = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -50,10 +50,6 @@ router.get('/', async (req, res) => {
     const { search, month, year } = req.query;
     const query = { createdBy: req.user.userId };
 
-    if (req.user.role === 'admin' && req.query.adminView === 'true') {
-      delete query.createdBy;
-    }
-
     if (search) {
       query.$or = [
         { customerName: new RegExp(escapeRegExp(search), 'i') },
@@ -76,7 +72,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.put('/:id', adminMiddleware, async (req, res) => {
+router.put('/:id', async (req, res) => {
   try {
     const { customerName, phone, prevReading, currReading, pricePerUnit, date } = req.body;
     const units = Number(currReading) - Number(prevReading);
@@ -87,7 +83,7 @@ router.put('/:id', adminMiddleware, async (req, res) => {
 
     const total = units * Number(pricePerUnit);
     if (Number.isNaN(new Date(date).getTime())) return res.status(400).json({ message: 'Tarehe si sahihi' });
-    const updated = await Record.findByIdAndUpdate(req.params.id, {
+    const updated = await Record.findOneAndUpdate({ _id: req.params.id, createdBy: req.user.userId }, {
       customerName,
       phone,
       prevReading,
@@ -124,63 +120,27 @@ router.post('/:id/payments', async (req, res) => {
     if (approvedTotal + paymentAmount > record.total) {
       return res.status(400).json({ message: 'Kiasi kinazidi deni lililobaki' });
     }
-    const hasPending = record.payments.some(payment => payment.status === 'pending');
-    if (hasPending) return res.status(400).json({ message: 'Kuna ombi la malipo linalosubiri idhini' });
-
-    record.payments.push({ amount: paymentAmount, reference, note, method: 'Manual' });
+    const payment = {
+      amount: paymentAmount,
+      reference,
+      note,
+      method: 'Manual',
+      status: 'approved',
+      approvedAt: new Date(),
+      receiptNumber: `MW-${Date.now().toString(36).toUpperCase()}`
+    };
+    record.payments.push(payment);
+    record.status = approvedTotal + paymentAmount >= record.total ? 'Imelipwa' : 'Haijalipwa';
     await record.save();
-    res.status(201).json({ message: 'Ombi la malipo limetumwa kwa idhini', record });
+    res.status(201).json({ message: record.status === 'Imelipwa' ? 'Malipo yamehifadhiwa. Risiti iko tayari.' : 'Malipo yamehifadhiwa.', record });
   } catch (error) {
     res.status(500).json({ message: 'Hitilafu ya server' });
   }
 });
 
-router.get('/payments/pending', adminMiddleware, async (req, res) => {
+router.delete('/:id', async (req, res) => {
   try {
-    const records = await Record.find({ 'payments.status': 'pending' }).populate('createdBy', 'name email');
-    const payments = records.flatMap(record => record.payments
-      .filter(payment => payment.status === 'pending')
-      .map(payment => ({ payment, record })));
-    res.json(payments);
-  } catch (error) {
-    res.status(500).json({ message: 'Hitilafu ya server' });
-  }
-});
-
-router.put('/:id/payments/:paymentId', adminMiddleware, async (req, res) => {
-  try {
-    const { decision, rejectionReason } = req.body;
-    if (!['approved', 'rejected'].includes(decision)) {
-      return res.status(400).json({ message: 'Uamuzi wa malipo si sahihi' });
-    }
-    const record = await Record.findById(req.params.id);
-    if (!record) return res.status(404).json({ message: 'Bill haipo' });
-    const payment = record.payments.id(req.params.paymentId);
-    if (!payment) return res.status(404).json({ message: 'Ombi la malipo halipo' });
-    if (payment.status !== 'pending') return res.status(400).json({ message: 'Ombi hili limeshughulikiwa tayari' });
-
-    payment.status = decision;
-    if (decision === 'approved') {
-      payment.approvedAt = new Date();
-      payment.approvedBy = req.user.userId;
-      payment.receiptNumber = `MW-${Date.now().toString(36).toUpperCase()}`;
-      const approvedTotal = record.payments
-        .filter(item => item.status === 'approved')
-        .reduce((sum, item) => sum + item.amount, 0);
-      record.status = approvedTotal >= record.total ? 'Imelipwa' : 'Haijalipwa';
-    } else {
-      payment.rejectionReason = String(rejectionReason || 'Malipo hayakuthibitishwa').trim();
-    }
-    await record.save();
-    res.json({ message: decision === 'approved' ? 'Malipo yameidhinishwa' : 'Malipo yamekataliwa', record });
-  } catch (error) {
-    res.status(500).json({ message: 'Hitilafu ya server' });
-  }
-});
-
-router.delete('/:id', adminMiddleware, async (req, res) => {
-  try {
-    const deleted = await Record.findByIdAndDelete(req.params.id);
+    const deleted = await Record.findOneAndDelete({ _id: req.params.id, createdBy: req.user.userId });
     if (!deleted) return res.status(404).json({ message: 'Rekodi haipo' });
     res.json({ message: 'Rekodi imefutwa' });
   } catch (error) {

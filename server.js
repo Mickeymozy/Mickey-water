@@ -4,8 +4,6 @@ const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const dotenv = require('dotenv');
 dotenv.config();
-const bcrypt = require('bcryptjs');
-const User = require('./models/User');
 const { connectDB, databaseStatus } = require('./config/db');
 const authRoutes = require('./routes/auth');
 const recordRoutes = require('./routes/records');
@@ -13,9 +11,6 @@ const recordRoutes = require('./routes/records');
 const app = express();
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || process.env.jwt_secret || 'change_this_secret';
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || process.env.admin_email || 'admin@admin.com';
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || process.env.admin_password || 'Admin123';
-
 if (!process.env.JWT_SECRET && !process.env.jwt_secret) {
   console.warn('WARNING: JWT_SECRET si imewekwa. Tumia .env kwa usalama au weka environment variable kwenye deployment.');
 }
@@ -55,26 +50,8 @@ app.use((error, req, res, next) => {
   res.status(500).json({ message: 'Hitilafu ya server' });
 });
 
-async function createDefaultAdmin() {
-  try {
-    const email = process.env.ADMIN_EMAIL || 'admin@admin.com';
-    const password = process.env.ADMIN_PASSWORD || 'Admin123';
-    const existing = await User.findOne({ email });
-    if (!existing) {
-      const hash = await bcrypt.hash(password, 10);
-      await User.create({ name: 'Admin', email, password: hash, role: 'admin' });
-      console.log(`Admin default ameundwa: ${email}`);
-    } else {
-      console.log('Admin default tayari yupo.');
-    }
-  } catch (err) {
-    console.error('Haikuweza kuunda admin default:', err.message);
-  }
-}
-
 if (require.main === module) {
   connectDB()
-    .then(createDefaultAdmin)
     .then(() => app.listen(PORT, () => {
       console.log(`Server inaendesha kwenye http://localhost:${PORT}`);
     }))
