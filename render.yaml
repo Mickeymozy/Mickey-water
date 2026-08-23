@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: mickey-water-system
+    runtime: node
+    startCommand: npm install && node server.js
+    envVars:
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: NODE_ENV
+        value: production

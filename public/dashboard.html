@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="sw">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Mickey Water</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    :root{--primary:#2563eb;--primary-dark:#1d4ed8;--bg:#f1f5f9;--surface:#fff;--border:#e2e8f0;--text:#0f172a;--text2:#64748b;--success:#059669;--warning:#d97706;--danger:#dc2626}
+    body{min-height:100vh;font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text)}
+    .header{background:var(--surface);border-bottom:1px solid var(--border);padding:16px 24px;position:sticky;top:0;z-index:50}
+    .header-inner{max-width:1200px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+    .logo{font-size:1.15rem;font-weight:800;color:var(--primary);display:flex;align-items:center;gap:8px;text-decoration:none}
+    .logo-icon{width:32px;height:32px;background:var(--primary);border-radius:8px;display:grid;place-items:center;color:#fff;font-size:0.85rem;font-weight:800}
+    .nav{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+    .nav button{color:var(--text2);font-weight:600;font-size:0.85rem;padding:8px 14px;border-radius:10px;border:none;background:transparent;cursor:pointer;transition:0.2s}
+    .nav button:hover{background:var(--bg)}
+    .container{max-width:1200px;margin:0 auto;padding:24px}
+    .page-title{margin-bottom:20px}
+    .page-title h1{font-size:1.5rem;font-weight:800;margin-bottom:4px}
+    .page-title p{color:var(--text2);font-size:0.9rem}
+    .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:20px}
+    .stat{background:var(--surface);border-radius:14px;padding:18px;border:1px solid var(--border)}
+    .stat .label{font-size:0.75rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:6px}
+    .stat .value{font-size:1.7rem;font-weight:800}
+    .stat .value.blue{color:var(--primary)}.stat .value.green{color:var(--success)}.stat .value.orange{color:var(--warning)}.stat .value.red{color:var(--danger)}
+    .tabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:16px}
+    .tab{padding:8px 16px;border-radius:10px;border:1px solid var(--border);background:transparent;cursor:pointer;font-weight:600;font-size:0.85rem;transition:0.2s;color:var(--text2)}
+    .tab.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+    .tab:hover:not(.active){background:var(--bg)}
+    .tab-panel{display:none}.tab-panel.active{display:block}
+    .card{background:var(--surface);border-radius:14px;padding:20px;border:1px solid var(--border);margin-bottom:16px}
+    .card h2{font-size:1.1rem;font-weight:700;margin-bottom:14px}
+    .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+    .field{display:flex;flex-direction:column;gap:5px}
+    .field label{font-weight:600;color:var(--text2);font-size:0.82rem}
+    .field input,.field select{padding:10px 14px;border-radius:10px;border:1.5px solid var(--border);font-size:0.9rem;outline:none;transition:0.2s;background:#f8fafc}
+    .field input:focus,.field select:focus{border-color:var(--primary);background:#fff}
+    .btn{padding:10px 18px;border-radius:10px;border:none;font-weight:700;cursor:pointer;font-size:0.85rem;transition:0.2s;display:inline-flex;align-items:center;gap:6px}
+    .btn-primary{background:var(--primary);color:#fff}.btn-primary:hover{background:var(--primary-dark)}
+    .btn-danger{background:var(--danger);color:#fff}.btn-danger:hover{background:#b91c1c}
+    .btn-outline{background:transparent;color:var(--text);border:1px solid var(--border)}.btn-outline:hover{background:var(--bg)}
+    .btn-sm{padding:6px 12px;font-size:0.8rem;border-radius:8px}
+    .preview-box{background:#f8fafc;border:1px solid var(--border);border-radius:12px;padding:16px;margin-top:12px;white-space:pre-wrap;font-size:0.88rem;color:var(--text2);line-height:1.6;max-height:200px;overflow-y:auto}
+    .record-item{background:var(--surface);border-radius:14px;padding:18px;border:1px solid var(--border);margin-bottom:12px;transition:0.2s}
+    .record-item:hover{border-color:var(--primary);box-shadow:0 4px 16px rgba(37,99,235,0.06)}
+    .record-header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+    .record-name{font-weight:700;font-size:0.95rem}
+    .record-badge{padding:4px 10px;border-radius:999px;font-size:0.75rem;font-weight:700}
+    .record-badge.paid{background:#dcfce7;color:#047857}
+    .record-badge.unpaid{background:#fef3c7;color:#92400e}
+    .record-badge.pending{background:#dbeafe;color:#1d4ed8}.record-badge.rejected{background:#fee2e2;color:#b91c1c}
+    .record-details{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;font-size:0.85rem;color:var(--text2)}
+    .record-details span{background:var(--bg);border-radius:8px;padding:8px 10px}
+    .search-input{padding:10px 14px;border-radius:10px;border:1px solid var(--border);font-size:0.88rem;width:100%;max-width:300px;outline:none}
+    .search-input:focus{border-color:var(--primary)}
+    .empty{padding:32px;text-align:center;color:var(--text2);font-size:0.9rem}
+    .subtle{color:var(--text2);font-size:.84rem}.receipt{margin-top:12px;padding:12px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:10px;color:#065f46;white-space:pre-wrap;font-size:.84rem;line-height:1.5}.payment-box{margin-top:14px;padding:14px;border:1px dashed #93c5fd;border-radius:10px;background:#eff6ff}.payment-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-top:10px}.payment-grid input{width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:8px;background:#fff}.pending-item{padding:14px;border:1px solid var(--border);border-radius:10px;margin-bottom:10px}.pending-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+    .toast{position:fixed;bottom:20px;right:20px;padding:12px 20px;border-radius:12px;color:#fff;font-weight:600;font-size:0.88rem;z-index:200;box-shadow:0 8px 24px rgba(0,0,0,0.15);transform:translateY(100px);opacity:0;transition:all 0.3s}
+    .toast.show{transform:translateY(0);opacity:1}
+    .toast.success{background:var(--success)}.toast.error{background:var(--danger)}
+    @media(max-width:640px){.stats{grid-template-columns:1fr 1fr}.form-grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="header-inner">
+      <a href="#" class="logo"><div class="logo-icon">MW</div> Mickey Water</a>
+      <nav class="nav">
+        <span id="userRoleLabel"></span>
+        <button onclick="logout()">Toka</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="page-title">
+      <h1>Rekodi za Ankara</h1>
+      <p>Tengeneza bill, pokea malipo ya manual, kisha thibitisha risiti kwa uwazi.</p>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div class="label">Wateja</div><div class="value blue" id="totalCustomers">0</div></div>
+      <div class="stat"><div class="label">Mapato Yaliyoidhinishwa</div><div class="value green" id="totalRevenue">0</div></div>
+      <div class="stat"><div class="label">Bili Zisizolipwa</div><div class="value orange" id="unpaidCount">0</div></div>
+      <div class="stat"><div class="label">Malipo Yanayosubiri</div><div class="value red" id="pendingCount">0</div></div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('form', event)">Unda Bill</button>
+      <button class="tab" onclick="switchTab('records', event)">Bills na Risiti</button>
+      <button class="tab admin-only" onclick="switchTab('payments', event)">Idhini za Malipo</button>
+    </div>
+
+    <div class="tab-panel active" id="panel-form">
+      <div class="card">
+        <h2>Unda Bill Mpya</h2>
+        <form id="billForm">
+          <div class="form-grid">
+            <div class="field" style="grid-column:span 2">
+              <label>Jina la Mteja</label>
+              <input type="text" id="customerName" placeholder="Mfano: Mickdady" required autocomplete="off">
+            </div>
+            <div class="field" style="grid-column:span 2">
+              <label>Namba ya Simu</label>
+              <input type="tel" id="phoneNumber" placeholder="0712345678" required autocomplete="off">
+            </div>
+            <div class="field">
+              <label>Usomaji wa Nyuma (Units)</label>
+              <input type="number" id="prevReading" step="0.1" value="25" required>
+            </div>
+            <div class="field">
+              <label>Usomaji wa Sasa (Units)</label>
+              <input type="number" id="currReading" step="0.1" value="30" required>
+            </div>
+            <div class="field">
+              <label>Gharama kwa Unit (TZS)</label>
+              <input type="number" id="pricePerUnit" value="2000" required>
+            </div>
+            <div class="field" style="grid-column:span 2">
+              <label>Tarehe ya Bill</label>
+              <input type="date" id="recordDate" required>
+            </div>
+          </div>
+
+          <div class="preview-box" id="billPreview">Ujumbe wa bill utaonekana hapa...</div>
+
+          <div style="margin-top:14px">
+            <button type="submit" class="btn btn-primary">Hifadhi Bill</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="tab-panel admin-only" id="panel-payments"><div class="card"><h2>Malipo ya Manual Yanayosubiri</h2><p class="subtle">Kagua ushahidi wa malipo kabla ya kutoa risiti.</p><div id="pendingPayments" style="margin-top:14px"></div></div></div>
+
+    <div class="tab-panel" id="panel-records">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+          <h2 style="margin-bottom:0">Rekodi Zilizohifadhiwa</h2>
+          <input type="text" class="search-input" id="searchInput" placeholder="Tafuta kwa jina, namba au miezi..." oninput="updateRecords()">
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:14px">
+          <select id="filterMonth" onchange="updateRecords()">
+            <option value="">Mwezi wote</option>
+            <option value="1">Januari</option>
+            <option value="2">Februari</option>
+            <option value="3">Machi</option>
+            <option value="4">Aprili</option>
+            <option value="5">Mei</option>
+            <option value="6">Juni</option>
+            <option value="7">Julai</option>
+            <option value="8">Agosti</option>
+            <option value="9">Septemba</option>
+            <option value="10">Oktoba</option>
+            <option value="11">Novemba</option>
+            <option value="12">Desemba</option>
+          </select>
+          <select id="filterYear" onchange="updateRecords()"></select>
+          <button class="btn btn-outline btn-sm" onclick="refreshRecords()">Sasisha</button>
+        </div>
+        <div id="recordsList"></div>
+      </div>
+    </div>
+  </main>
+
+  <div class="toast" id="toast"></div>
+
+  <div id="editModal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.6);align-items:center;justify-content:center;padding:24px;z-index:300">
+    <div style="background:#fff;border-radius:18px;width:100%;max-width:640px;overflow:hidden">
+      <div style="padding:20px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center">
+        <div><h2 style="margin:0;font-size:1.1rem;color:#101828">Hariri Bill</h2></div>
+        <button onclick="closeEditModal()" style="border:none;background:transparent;font-size:1.25rem;cursor:pointer;color:#334155">×</button>
+      </div>
+      <div style="padding:20px;">
+        <form id="editForm">
+          <div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px">
+            <div class="field"><label>Jina la Mteja</label><input type="text" id="editCustomerName" required></div>
+            <div class="field"><label>Namba ya Simu</label><input type="tel" id="editPhoneNumber" required></div>
+            <div class="field"><label>Usomaji wa Nyuma</label><input type="number" id="editPrevReading" step="0.1" required></div>
+            <div class="field"><label>Usomaji wa Sasa</label><input type="number" id="editCurrReading" step="0.1" required></div>
+            <div class="field"><label>Gharama kwa Unit</label><input type="number" id="editPricePerUnit" required></div>
+            <div class="field" style="grid-column:span 2"><label>Tarehe ya Ankara</label><input type="date" id="editDate" required></div>
+          </div>
+          <div style="margin-top:18px;display:flex;gap:12px;flex-wrap:wrap;justify-content:flex-end">
+            <button type="button" class="btn btn-outline" onclick="closeEditModal()">Ghairi</button>
+            <button type="submit" class="btn btn-primary">Hifadhi Mabadiliko</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const token = localStorage.getItem('mickey_token');
+    const user = JSON.parse(localStorage.getItem('mickey_user') || '{}');
+    if (!token) window.location.href = 'index.html';
+
+    const state = { records: [], filter: '', month: '', year: '', admin: user.role === 'admin', editId: null };
+    document.querySelectorAll('.admin-only').forEach(el => { if (!state.admin) el.style.display = 'none'; });
+    const years = new Date().getFullYear();
+
+    document.getElementById('userRoleLabel').textContent = `Akaunti: ${user.name || 'Mtumiaji'} (${user.role || 'user'})`;
+    const filterYear = document.getElementById('filterYear');
+    for (let y = years; y >= years - 4; y--) {
+      const option = document.createElement('option');
+      option.value = y; option.textContent = y;
+      filterYear.appendChild(option);
+    }
+
+    function showToast(msg, type = 'success') {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.className = 'toast ' + type + ' show';
+      setTimeout(() => t.classList.remove('show'), 3000);
+    }
+
+    function logout() {
+      localStorage.removeItem('mickey_token');
+      localStorage.removeItem('mickey_user');
+      window.location.href = 'index.html';
+    }
+
+    function formatDate(dateString) {
+      const d = new Date(dateString);
+      return d.toLocaleDateString('sw-TZ', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    }
+
+    function generateBillMessage(name, prev, curr, units, total, date, price) {
+      const dateStr = new Date(date).toLocaleDateString('sw-TZ', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      return `Mickey Water | BILL\nNdugu ${name.toUpperCase()},\nTarehe ya bill: ${dateStr}\n\nUsomaji wa nyuma: ${prev} Units\nUsomaji wa sasa: ${curr} Units\nMatumizi: ${units} Units\nGharama kwa Unit: TZS ${price.toLocaleString()}\n\nJumla ya bill: TZS ${total.toLocaleString()}\nHali ya bill: Inasubiri malipo\n\nBill hii si risiti ya malipo. Lipa kisha subiri idhini.\nMickey Water`;
+    }
+
+    function generateReceiptMessage(record, payment) {
+      return `Mickey Water | RISITI YA MALIPO\nNdugu ${record.customerName.toUpperCase()},\nNamba ya risiti: ${payment.receiptNumber}\nTarehe ya malipo: ${formatDate(payment.approvedAt)}\n\nKiasi kilichopokelewa: TZS ${Number(payment.amount).toLocaleString()}\nNjia: Malipo ya manual\nRejea: ${payment.reference || 'Haijawekwa'}\n\nHii ni risiti ya malipo yaliyoidhinishwa.\nAsante, Mickey Water`;
+    }
+
+    function updateBillPreview() {
+      const name = document.getElementById('customerName').value || 'Mteja';
+      const prev = parseFloat(document.getElementById('prevReading').value) || 0;
+      const curr = parseFloat(document.getElementById('currReading').value) || 0;
+      const price = parseFloat(document.getElementById('pricePerUnit').value) || 0;
+      const units = Math.max(0, curr - prev);
+      const total = units * price;
+      const date = document.getElementById('recordDate').value || new Date();
+      document.getElementById('billPreview').innerText = generateBillMessage(name, prev, curr, units, total, date, price);
+    }
+
+    async function fetchRecords() {
+      const params = new URLSearchParams();
+      if (state.filter) params.append('search', state.filter);
+      if (state.month) params.append('month', state.month);
+      if (state.year) params.append('year', state.year);
+      if (state.admin) params.append('adminView', 'true');
+      const res = await fetch(`/api/records?${params.toString()}`, { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) throw new Error('Hitilafu kupakua rekodi');
+      state.records = await res.json();
+    }
+
+    async function updateRecords() {
+      state.filter = document.getElementById('searchInput').value.trim();
+      state.month = document.getElementById('filterMonth').value;
+      state.year = document.getElementById('filterYear').value;
+      await loadRecords();
+    }
+
+    async function loadRecords() {
+      try {
+        await fetchRecords();
+        displayRecords();
+        updateStatistics();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    function displayRecords() {
+      const container = document.getElementById('recordsList');
+      if (!state.records.length) {
+        container.innerHTML = `<div class="empty">Hakuna rekodi zinazopatikana.</div>`;
+        return;
+      }
+      container.innerHTML = state.records.map(r => `
+        <div class="record-item">
+          <div class="record-header">
+            <span class="record-name">${escapeHtml(r.customerName)}</span>
+            <span class="record-badge ${r.status === 'Imelipwa' ? 'paid' : 'unpaid'}">${r.status}</span>
+          </div>
+          <div class="record-details">
+            <span>${escapeHtml(r.phone)}</span>
+            <span>${r.units.toLocaleString()} Units</span>
+            <span>Bill: TZS ${r.total.toLocaleString()}</span>
+            <span>${formatDate(r.date)}</span>
+          </div>
+          <div class="subtle" style="margin-top:10px">${paymentSummary(r)}</div>
+          ${paymentActions(r)}
+          <div style="margin-top:10px;text-align:right;display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap">
+            ${state.admin ? `<button class="btn btn-sm btn-outline" onclick="openEditModal('${r._id}')">Hariri</button><button class="btn btn-sm btn-danger" onclick="deleteRecord('${r._id}')">Futa</button>` : ''}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function paymentSummary(record) {
+      const approved = (record.payments || []).filter(p => p.status === 'approved').reduce((sum, p) => sum + Number(p.amount), 0);
+      const pending = (record.payments || []).find(p => p.status === 'pending');
+      if (pending) return `Malipo ya manual: TZS ${Number(pending.amount).toLocaleString()} - yanasubiri idhini`;
+      if (approved) return `Yaliyolipwa: TZS ${approved.toLocaleString()} | Salio: TZS ${Math.max(0, record.total - approved).toLocaleString()}`;
+      const rejected = (record.payments || []).find(p => p.status === 'rejected');
+      if (rejected) return `Malipo yamekataliwa: ${escapeHtml(rejected.rejectionReason || 'Hayakuthibitishwa')}`;
+      return 'Hakuna malipo yaliyowasilishwa';
+    }
+
+    function paymentActions(record) {
+      const pending = (record.payments || []).some(p => p.status === 'pending');
+      const approved = (record.payments || []).filter(p => p.status === 'approved');
+      const receipt = approved.length ? approved[approved.length - 1] : null;
+      const submission = state.admin ? '' : (pending ? '<strong>Ombi lako linasubiri idhini ya admin.</strong>' : `<form onsubmit="submitPayment(event, '${record._id}')"><strong>Wasilisha malipo ya manual</strong><div class="payment-grid"><input type="number" min="1" step="1" max="${record.total}" placeholder="Kiasi (TZS)" required id="amount-${record._id}"><input type="text" placeholder="Rejea ya muamala" id="reference-${record._id}" maxlength="100"><input type="text" placeholder="Maelezo (hiari)" id="note-${record._id}" maxlength="500"><button class="btn btn-primary btn-sm" type="submit">Tuma kwa idhini</button></div></form>`);
+      return `<div class="payment-box">${submission}${receipt ? `<div class="receipt">${escapeHtml(generateReceiptMessage(record, receipt))}</div>` : ''}</div>`;
+    }
+
+    function escapeHtml(str) {
+      return String(str || '').replace(/[&<>"']/g, tag => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[tag]));
+    }
+
+    async function saveRecord(event) {
+      event.preventDefault();
+      const customerName = document.getElementById('customerName').value.trim();
+      const phone = document.getElementById('phoneNumber').value.trim();
+      const prevReading = parseFloat(document.getElementById('prevReading').value);
+      const currReading = parseFloat(document.getElementById('currReading').value);
+      const pricePerUnit = parseFloat(document.getElementById('pricePerUnit').value);
+      const date = document.getElementById('recordDate').value;
+
+      if (!customerName || !phone || !date) return showToast('Jaza maeneo yote', 'error');
+      if (currReading < prevReading) return showToast('Usomaji wa sasa hauwezi kuwa chini ya nyuma', 'error');
+
+      const res = await fetch('/api/records', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ customerName, phone, prevReading, currReading, pricePerUnit, date })
+      });
+      const data = await res.json();
+      if (!res.ok) return showToast(data.message || 'Hitilafu wakati wa kuhifadhi', 'error');
+
+      showToast('Bill imehifadhiwa');
+      document.getElementById('billForm').reset();
+      document.getElementById('pricePerUnit').value = 2000;
+      updateBillPreview();
+      await loadRecords();
+    }
+
+    function refreshRecords() { loadRecords(); }
+
+    function switchTab(name, event) {
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.getElementById('panel-' + name).classList.add('active');
+      if (event) event.currentTarget.classList.add('active');
+      if (name === 'records') loadRecords();
+      if (name === 'payments' && state.admin) loadPendingPayments();
+    }
+
+    async function deleteRecord(id) {
+      if (!confirm('Je, una uhakika unataka kufuta rekodi hii?')) return;
+      const res = await fetch(`/api/records/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json();
+      if (!res.ok) return showToast(data.message || 'Hitilafu', 'error');
+      showToast('Rekodi imefutwa');
+      await loadRecords();
+    }
+
+    function openEditModal(id) {
+      const record = state.records.find(r => r._id === id);
+      if (!record) return;
+      state.editId = id;
+      document.getElementById('editCustomerName').value = record.customerName;
+      document.getElementById('editPhoneNumber').value = record.phone;
+      document.getElementById('editPrevReading').value = record.prevReading;
+      document.getElementById('editCurrReading').value = record.currReading;
+      document.getElementById('editPricePerUnit').value = record.pricePerUnit;
+      document.getElementById('editDate').value = record.date.split('T')[0];
+      document.getElementById('editModal').style.display = 'flex';
+    }
+
+    function closeEditModal() {
+      document.getElementById('editModal').style.display = 'none';
+      state.editId = null;
+    }
+
+    async function saveEdit(event) {
+      event.preventDefault();
+      if (!state.editId) return;
+      const customerName = document.getElementById('editCustomerName').value.trim();
+      const phone = document.getElementById('editPhoneNumber').value.trim();
+      const prevReading = parseFloat(document.getElementById('editPrevReading').value);
+      const currReading = parseFloat(document.getElementById('editCurrReading').value);
+      const pricePerUnit = parseFloat(document.getElementById('editPricePerUnit').value);
+      const date = document.getElementById('editDate').value;
+      if (currReading < prevReading) return showToast('Usomaji wa sasa hauwezi kuwa chini ya nyuma', 'error');
+
+      const res = await fetch(`/api/records/${state.editId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ customerName, phone, prevReading, currReading, pricePerUnit, date })
+      });
+      const data = await res.json();
+      if (!res.ok) return showToast(data.message || 'Hitilafu wakati wa kuhifadhi', 'error');
+
+      showToast('Mabadiliko yametumiwa');
+      closeEditModal();
+      await loadRecords();
+    }
+
+    document.getElementById('billForm').addEventListener('submit', saveRecord);
+    document.getElementById('editForm').addEventListener('submit', saveEdit);
+    ['customerName','phoneNumber','prevReading','currReading','pricePerUnit','recordDate'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) { el.addEventListener('input', updateBillPreview); el.addEventListener('change', updateBillPreview); }
+    });
+
+    document.getElementById('recordDate').value = new Date().toISOString().slice(0,10);
+    updateBillPreview();
+    loadRecords();
+    if (state.admin) loadPendingPayments();
+
+    async function submitPayment(event, recordId) {
+      event.preventDefault();
+      const amount = Number(document.getElementById(`amount-${recordId}`).value);
+      const reference = document.getElementById(`reference-${recordId}`).value.trim();
+      const note = document.getElementById(`note-${recordId}`).value.trim();
+      const res = await fetch(`/api/records/${recordId}/payments`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ amount, reference, note })
+      });
+      const data = await res.json();
+      if (!res.ok) return showToast(data.message || 'Malipo hayakutumika', 'error');
+      showToast('Malipo yametumwa kwa idhini');
+      await loadRecords();
+    }
+
+    async function loadPendingPayments() {
+      try {
+        const res = await fetch('/api/records/payments/pending', { headers: { Authorization: `Bearer ${token}` } });
+        if (!res.ok) throw new Error('Imeshindikana kupakua malipo');
+        const items = await res.json();
+        const container = document.getElementById('pendingPayments');
+        if (!items.length) { container.innerHTML = '<div class="empty">Hakuna malipo yanayosubiri idhini.</div>'; return; }
+        container.innerHTML = items.map(item => `<div class="pending-item"><strong>${escapeHtml(item.record.customerName)}</strong><div class="subtle">Bill TZS ${Number(item.record.total).toLocaleString()} | ${formatDate(item.payment.submittedAt)}</div><p style="margin-top:8px">Kiasi: <strong>TZS ${Number(item.payment.amount).toLocaleString()}</strong><br>Rejea: ${escapeHtml(item.payment.reference || 'Haijawekwa')}<br>Maelezo: ${escapeHtml(item.payment.note || 'Hakuna')}</p><div class="pending-actions"><button class="btn btn-primary btn-sm" onclick="reviewPayment('${item.record._id}','${item.payment._id}','approved')">Idhinisha na toa risiti</button><button class="btn btn-danger btn-sm" onclick="reviewPayment('${item.record._id}','${item.payment._id}','rejected')">Kataa</button></div></div>`).join('');
+      } catch (error) { showToast(error.message, 'error'); }
+    }
+
+    async function reviewPayment(recordId, paymentId, decision) {
+      const rejectionReason = decision === 'rejected' ? (prompt('Sababu ya kukataa malipo:') || 'Malipo hayakuthibitishwa') : '';
+      const res = await fetch(`/api/records/${recordId}/payments/${paymentId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ decision, rejectionReason }) });
+      const data = await res.json();
+      if (!res.ok) return showToast(data.message || 'Imeshindikana', 'error');
+      showToast(data.message);
+      await Promise.all([loadPendingPayments(), loadRecords()]);
+    }
+
+    function updateStatistics() {
+      const records = state.records;
+      document.getElementById('totalCustomers').textContent = records.length;
+      document.getElementById('totalRevenue').textContent = records.reduce((sum, r) => sum + Number(r.total || 0), 0).toLocaleString();
+      document.getElementById('unpaidCount').textContent = records.filter(r => r.status !== 'Imelipwa').length;
+      document.getElementById('pendingCount').textContent = records.reduce((sum, r) => sum + (r.payments || []).filter(p => p.status === 'pending').length, 0);
+    }
+  </script>
+</body>
+</html>
