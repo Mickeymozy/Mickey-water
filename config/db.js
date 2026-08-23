@@ -10,6 +10,10 @@ const MONGODB_URI = (
 ).trim();
 let connectionPromise;
 
+if (!MONGODB_URI) {
+  throw new Error('MONGODB_URI haijawekwa kwenye environment variables');
+}
+
 async function connectDB() {
   if (mongoose.connection.readyState === 1) return mongoose.connection;
   if (connectionPromise) return connectionPromise;
@@ -25,6 +29,7 @@ async function connectDB() {
     return mongoose.connection;
   }).catch(error => {
     connectionPromise = undefined;
+    console.error('MongoDB connection failed:', error.message);
     throw error;
   });
 
