@@ -12,19 +12,20 @@ router.use(authMiddleware);
 
 router.post('/', async (req, res) => {
   try {
-    const { customerName, phone, prevReading, currReading, pricePerUnit, date } = req.body;
+    const { customerName, phone, prevReading, currReading, pricePerUnit, previousDebt = 0, date } = req.body;
     if (!customerName || !phone || prevReading == null || currReading == null || pricePerUnit == null || !date) {
       return res.status(400).json({ message: 'Jaza maeneo yote' });
     }
 
     const units = Number(currReading) - Number(prevReading);
-    if (![prevReading, currReading, pricePerUnit].every(value => Number.isFinite(Number(value))) || Number(pricePerUnit) < 0) {
+    if (![prevReading, currReading, pricePerUnit, previousDebt].every(value => Number.isFinite(Number(value))) || Number(pricePerUnit) < 0 || Number(previousDebt) < 0) {
       return res.status(400).json({ message: 'Weka readings na bei sahihi' });
     }
     if (units < 0) return res.status(400).json({ message: 'Usomaji wa sasa ni lazima uwe juu ya wa nyuma' });
     if (Number.isNaN(new Date(date).getTime())) return res.status(400).json({ message: 'Tarehe si sahihi' });
 
-    const total = units * Number(pricePerUnit);
+    const currentBill = units * Number(pricePerUnit);
+    const total = currentBill + Number(previousDebt);
     const record = new Record({
       customerName,
       phone,
@@ -32,6 +33,8 @@ router.post('/', async (req, res) => {
       currReading,
       units,
       pricePerUnit,
+      previousDebt: Number(previousDebt),
+      currentBill,
       total,
       status: 'Haijalipwa',
       date: new Date(date),
@@ -74,14 +77,15 @@ router.get('/', async (req, res) => {
 
 router.put('/:id', async (req, res) => {
   try {
-    const { customerName, phone, prevReading, currReading, pricePerUnit, date } = req.body;
+    const { customerName, phone, prevReading, currReading, pricePerUnit, previousDebt = 0, date } = req.body;
     const units = Number(currReading) - Number(prevReading);
-    if (![prevReading, currReading, pricePerUnit].every(value => Number.isFinite(Number(value))) || Number(pricePerUnit) < 0) {
+    if (![prevReading, currReading, pricePerUnit, previousDebt].every(value => Number.isFinite(Number(value))) || Number(pricePerUnit) < 0 || Number(previousDebt) < 0) {
       return res.status(400).json({ message: 'Weka readings na bei sahihi' });
     }
     if (units < 0) return res.status(400).json({ message: 'Usomaji wa sasa ni lazima uwe juu ya wa nyuma' });
 
-    const total = units * Number(pricePerUnit);
+    const currentBill = units * Number(pricePerUnit);
+    const total = currentBill + Number(previousDebt);
     if (Number.isNaN(new Date(date).getTime())) return res.status(400).json({ message: 'Tarehe si sahihi' });
     const updated = await Record.findOneAndUpdate({ _id: req.params.id, createdBy: req.user.userId }, {
       customerName,
@@ -90,6 +94,8 @@ router.put('/:id', async (req, res) => {
       currReading,
       units,
       pricePerUnit,
+      previousDebt: Number(previousDebt),
+      currentBill,
       total,
       date: new Date(date),
       updatedAt: Date.now()

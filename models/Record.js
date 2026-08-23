@@ -20,6 +20,8 @@ const recordSchema = new mongoose.Schema({
   currReading: { type: Number, required: true },
   units: { type: Number, required: true },
   pricePerUnit: { type: Number, required: true },
+  previousDebt: { type: Number, required: true, min: 0, default: 0 },
+  currentBill: { type: Number, required: true, min: 0, default: 0 },
   total: { type: Number, required: true },
   status: { type: String, enum: ['Haijalipwa', 'Imelipwa'], default: 'Haijalipwa' },
   payments: { type: [paymentSchema], default: [] },
