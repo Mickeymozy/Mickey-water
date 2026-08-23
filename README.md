@@ -14,11 +14,19 @@ Simple water billing web app with MongoDB, user/admin login, and admin editing.
    PORT=3000
    MONGODB_URI=mongodb://127.0.0.1:27017/mickey_water
    JWT_SECRET=your_secret_key_here
+   SMTP_HOST=smtp.example.com
+   SMTP_PORT=587
+   SMTP_SECURE=false
+   SMTP_USER=your_email@example.com
+   SMTP_PASS=your_smtp_password
+   SMTP_FROM=your_email@example.com
    CLIENT_ORIGIN=http://localhost:3000
    ADMIN_EMAIL=admin@admin.com
    ADMIN_PASSWORD=Admin123
    ```
 3. Start MongoDB locally or use MongoDB Atlas.
+
+Password reset email inahitaji SMTP settings zilizo hapo juu. Backup ya MongoDB inaendeshwa kwa `npm run backup` baada ya kusakinisha MongoDB Database Tools (`mongodump`). Backup files zinawekwa kwenye `backups/`, ambayo haifuatiliwi na Git.
 4. Run the app:
    ```bash
    npm start

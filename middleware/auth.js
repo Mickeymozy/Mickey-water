@@ -10,6 +10,7 @@ function authMiddleware(req, res, next) {
   const token = authHeader.split(' ')[1];
   try {
     const payload = jwt.verify(token, JWT_SECRET);
+    if (payload.type && payload.type !== 'access') return res.status(401).json({ message: 'Token si sahihi' });
     req.user = payload;
     next();
   } catch (err) {
