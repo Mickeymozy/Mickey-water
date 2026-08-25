@@ -39,7 +39,7 @@ const originalRender=render;render=function(){originalRender();const search=$('s
 async function deleteRecordById(id){const record=state.records.find(item=>item._id===id);if(!record||!confirm(`Futa bill ya ${record.customerName}?`))return;const res=await originalFetch(`/api/records/${id}`,{method:'DELETE',headers:{Authorization:`Bearer ${token}`}});const data=await res.json();if(!res.ok)return toast(data.message||'Bill haikufutwa');toast('Bill imefutwa');await load()};document.getElementById('previousDebt').addEventListener('input',updatePreview);updatePreview();render();
 async function deleteAccount(){if(!confirm('Futa akaunti yako pamoja na records zote? Hatua hii haiwezi kurudishwa.'))return;const res=await originalFetch('/api/auth/me',{method:'DELETE',headers:{Authorization:`Bearer ${token}`}});const data=await res.json();if(!res.ok)return toast(data.message||'Akaunti haikufutwa');localStorage.clear();location.href='index.html'}
 const accountButton=document.createElement('button');accountButton.className='logout';accountButton.textContent='Futa akaunti';accountButton.style.color='#a34c17';accountButton.style.marginLeft='6px';accountButton.onclick=deleteAccount;document.querySelector('.topbar').insertBefore(accountButton,document.querySelector('.topbar').lastElementChild);
-<style>
+</script><style>
   .topbar{padding-bottom:18px;border-bottom:1px solid var(--line)}
   .toolbar{align-items:center}.toolbar .date-filter{max-width:150px;min-width:125px}
   .utility-bar{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin:-8px 0 18px}
