@@ -7,6 +7,40 @@ function normalizePhone(phone) {
 }
 
 function smsConfigured() {
+  return Boolean(process.env.TAPSA_API_KEY || (
+    process.env.TWILIO_ACCOUNT_SID &&
+    process.env.TWILIO_AUTH_TOKEN &&
+    process.env.TWILIO_PHONE_NUMBER
+  ));
+}
+
+function tapsaConfigured() {
+  return Boolean(process.env.TAPSA_API_KEY && process.env.TAPSA_SENDER_ID);
+}
+
+async function sendWithTapsa(phone, body) {
+  const response = await fetch('https://api.smstapsa.site/v1/sms/send', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': process.env.TAPSA_API_KEY
+    },
+    body: JSON.stringify({
+      phoneNumbers: [normalizePhone(phone).slice(1)],
+      message: String(body).slice(0, 1600),
+      senderId: process.env.TAPSA_SENDER_ID
+    })
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || data.success === false) {
+    const error = new Error(data.message || 'TAPSA imeshindwa kutuma SMS.');
+    error.code = 'SMS_PROVIDER_ERROR';
+    throw error;
+  }
+  return { messageId: data.data?.messageId, to: normalizePhone(phone) };
+}
+
+function twilioConfigured() {
   return Boolean(
     process.env.TWILIO_ACCOUNT_SID &&
     process.env.TWILIO_AUTH_TOKEN &&
@@ -15,16 +49,18 @@ function smsConfigured() {
 }
 
 async function sendSMS(phone, body) {
-  if (!smsConfigured()) {
-    const error = new Error('SMS haijawekwa. Weka TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN na TWILIO_PHONE_NUMBER.');
-    error.code = 'SMS_NOT_CONFIGURED';
-    throw error;
-  }
-
   const to = normalizePhone(phone);
   if (!to || !/^\+\d{10,15}$/.test(to)) {
     const error = new Error('Namba ya simu si sahihi. Tumia mfano 0712345678.');
     error.code = 'INVALID_PHONE';
+    throw error;
+  }
+
+  if (tapsaConfigured()) return sendWithTapsa(phone, body);
+
+  if (!twilioConfigured()) {
+    const error = new Error('SMS API haijawekwa.');
+    error.code = 'SMS_NOT_CONFIGURED';
     throw error;
   }
 

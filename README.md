@@ -20,11 +20,15 @@ Simple water billing web app with MongoDB, user/admin login, and admin editing.
    SMTP_USER=your_email@example.com
    SMTP_PASS=your_smtp_password
    SMTP_FROM=your_email@example.com
+   TAPSA_API_KEY=your_tapsa_api_key
+   TAPSA_SENDER_ID=TAPSA
    CLIENT_ORIGIN=http://localhost:3000
    ADMIN_EMAIL=admin@admin.com
    ADMIN_PASSWORD=Admin123
    ```
 3. Start MongoDB locally or use MongoDB Atlas.
+
+SMS za moja kwa moja zinatumia TAPSA. Weka `TAPSA_API_KEY` na `TAPSA_SENDER_ID` kwenye environment ya server. Ikiwa TAPSA haijawekwa au haipatikani, kitufe cha SMS kitafungua programu ya SMS kwenye kifaa.
 
 Password reset email inahitaji SMTP settings zilizo hapo juu. Backup ya MongoDB inaendeshwa kwa `npm run backup` baada ya kusakinisha MongoDB Database Tools (`mongodump`). Backup files zinawekwa kwenye `backups/`, ambayo haifuatiliwi na Git.
 4. Run the app:

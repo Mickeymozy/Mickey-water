@@ -2,6 +2,7 @@ const express = require('express');
 const Record = require('../models/Record');
 const AuditLog = require('../models/AuditLog');
 const { authMiddleware } = require('../middleware/auth');
+const { sendSMS } = require('../services/sms');
 
 const router = express.Router();
 
@@ -122,6 +123,24 @@ router.put('/:id', async (req, res) => {
   } catch (error) {
     console.error('Record update failed:', error.message);
     res.status(500).json({ message: 'Hitilafu ya server' });
+  }
+});
+
+router.post('/:id/messages', async (req, res) => {
+  try {
+    const { message } = req.body;
+    if (!message || String(message).trim().length > 1600) {
+      return res.status(400).json({ message: 'Ujumbe si sahihi' });
+    }
+    const record = await Record.findOne({ _id: req.params.id, createdBy: req.user.userId });
+    if (!record) return res.status(404).json({ message: 'Bill haipo' });
+    const result = await sendSMS(record.phone, message);
+    audit(req, 'sms_sent', record._id, { messageId: result.messageId });
+    res.json({ message: 'SMS imetumwa', result });
+  } catch (error) {
+    console.error('SMS send failed:', error.message);
+    const status = error.code === 'SMS_NOT_CONFIGURED' || error.code === 'SMS_PROVIDER_ERROR' ? 503 : 400;
+    res.status(status).json({ message: error.message });
   }
 });
 
