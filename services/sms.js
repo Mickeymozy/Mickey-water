@@ -7,7 +7,7 @@ function normalizePhone(phone) {
 }
 
 function smsConfigured() {
-  return Boolean(process.env.TAPSA_API_KEY || (
+  return Boolean(tapsaApiKey() || (
     process.env.TWILIO_ACCOUNT_SID &&
     process.env.TWILIO_AUTH_TOKEN &&
     process.env.TWILIO_PHONE_NUMBER
@@ -15,22 +15,30 @@ function smsConfigured() {
 }
 
 function tapsaConfigured() {
-  return Boolean(process.env.TAPSA_API_KEY && process.env.TAPSA_SENDER_ID);
+  return Boolean(tapsaApiKey() && process.env.TAPSA_SENDER_ID?.trim());
+}
+
+function tapsaApiKey() {
+  return String(process.env.TAPSA_API_KEY || process.env.TAPSA_API_TOKEN || '').trim();
 }
 
 async function sendWithTapsa(phone, body) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000);
   const response = await fetch('https://api.smstapsa.site/v1/sms/send', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': process.env.TAPSA_API_KEY
+      'x-api-key': tapsaApiKey()
     },
     body: JSON.stringify({
       phoneNumbers: [normalizePhone(phone).slice(1)],
       message: String(body).slice(0, 1600),
-      senderId: process.env.TAPSA_SENDER_ID
-    })
+      senderId: process.env.TAPSA_SENDER_ID.trim()
+    }),
+    signal: controller.signal
   });
+  clearTimeout(timeout);
   const data = await response.json().catch(() => ({}));
   if (!response.ok || data.success === false) {
     const error = new Error(data.message || 'TAPSA imeshindwa kutuma SMS.');

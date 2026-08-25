@@ -12,5 +12,9 @@ services:
         sync: false
       - key: ADMIN_PASSWORD
         sync: false
+      - key: TAPSA_API_KEY
+        sync: false
+      - key: TAPSA_SENDER_ID
+        value: TAPSA
       - key: NODE_ENV
         value: production
