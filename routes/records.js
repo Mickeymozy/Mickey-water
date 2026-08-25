@@ -10,7 +10,9 @@ function createInvoiceNumber() {
 }
 
 function audit(req, action, recordId, metadata = {}) {
-  return AuditLog.create({ userId: req.user.userId, action, recordId, metadata });
+  return AuditLog.create({ userId: req.user.userId, action, recordId, metadata }).catch(error => {
+    console.error(`Audit log failed (${action}):`, error.message);
+  });
 }
 
 function escapeRegExp(value) {
@@ -52,9 +54,10 @@ router.post('/', async (req, res) => {
     });
 
     await record.save();
-    await audit(req, 'record_created', record._id, { total: record.total });
+    audit(req, 'record_created', record._id, { total: record.total });
     res.status(201).json(record);
   } catch (error) {
+    console.error('Record create failed:', error.message);
     res.status(500).json({ message: 'Hitilafu ya server' });
   }
 });
@@ -82,6 +85,7 @@ router.get('/', async (req, res) => {
     const records = await Record.find(query).sort({ date: -1, createdAt: -1 });
     res.json(records);
   } catch (error) {
+    console.error('Record list failed:', error.message);
     res.status(500).json({ message: 'Hitilafu ya server' });
   }
 });
@@ -113,9 +117,10 @@ router.put('/:id', async (req, res) => {
     }, { new: true, runValidators: true });
 
     if (!updated) return res.status(404).json({ message: 'Rekodi haipo' });
-    await audit(req, 'record_updated', updated._id, { total: updated.total });
+    audit(req, 'record_updated', updated._id, { total: updated.total });
     res.json(updated);
   } catch (error) {
+    console.error('Record update failed:', error.message);
     res.status(500).json({ message: 'Hitilafu ya server' });
   }
 });
@@ -150,9 +155,10 @@ router.post('/:id/payments', async (req, res) => {
     record.payments.push(payment);
     record.status = approvedTotal + paymentAmount >= record.total ? 'Imelipwa' : 'Haijalipwa';
     await record.save();
-    await audit(req, 'payment_created', record._id, { amount: paymentAmount, reference });
+    audit(req, 'payment_created', record._id, { amount: paymentAmount, reference });
     res.status(201).json({ message: record.status === 'Imelipwa' ? 'Malipo yamehifadhiwa. Risiti iko tayari.' : 'Malipo yamehifadhiwa.', record });
   } catch (error) {
+    console.error('Payment create failed:', error.message);
     res.status(500).json({ message: 'Hitilafu ya server' });
   }
 });
@@ -161,9 +167,10 @@ router.delete('/:id', async (req, res) => {
   try {
     const deleted = await Record.findOneAndDelete({ _id: req.params.id, createdBy: req.user.userId });
     if (!deleted) return res.status(404).json({ message: 'Rekodi haipo' });
-    await audit(req, 'record_deleted', deleted._id, { total: deleted.total });
+    audit(req, 'record_deleted', deleted._id, { total: deleted.total });
     res.json({ message: 'Rekodi imefutwa' });
   } catch (error) {
+    console.error('Record delete failed:', error.message);
     res.status(500).json({ message: 'Hitilafu ya server' });
   }
 });

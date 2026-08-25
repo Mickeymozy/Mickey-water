@@ -135,7 +135,9 @@ router.delete('/me', authMiddleware, async (req, res) => {
     await Record.deleteMany({ createdBy: user._id });
     await RefreshToken.deleteMany({ userId: user._id });
     await User.deleteOne({ _id: user._id });
-    await AuditLog.create({ userId: user._id, action: 'account_deleted', metadata: { email: user.email } });
+    await AuditLog.create({ userId: user._id, action: 'account_deleted', metadata: { email: user.email } }).catch(error => {
+      console.error('Audit log failed (account_deleted):', error.message);
+    });
     res.json({ message: 'Akaunti na records zake zimefutwa kabisa' });
   } catch (error) {
     res.status(500).json({ message: 'Akaunti haikuweza kufutwa' });

@@ -29,7 +29,7 @@ app.use('/api', async (req, res, next) => {
     next();
   } catch (error) {
     console.error('MongoDB haipatikani:', error.message);
-    res.status(503).json({ message: 'Huduma ya database haipatikani kwa sasa' });
+    res.status(503).json({ message: 'Database haipatikani. Hakikisha MONGODB_URI na MongoDB Atlas Network Access viko sahihi.' });
   }
 });
 
