@@ -1,0 +1,9 @@
+{
+  "name": "Mickey Water Billing",
+  "short_name": "Mickey Water",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f5f4ee",
+  "theme_color": "#087f73",
+  "lang": "sw"
+}

@@ -156,10 +156,10 @@ router.post('/:id/payments', async (req, res) => {
     if (reference && record.payments.some(payment => payment.reference === String(reference).trim())) {
       return res.status(409).json({ message: 'Reference hii imetumika tayari kwenye bill hii' });
     }
-    const approvedTotal = record.payments
-      .filter(payment => payment.status === 'approved')
+    const submittedTotal = record.payments
+      .filter(payment => payment.status === 'pending' || payment.status === 'approved')
       .reduce((sum, payment) => sum + payment.amount, 0);
-    if (approvedTotal + paymentAmount > record.total) {
+    if (submittedTotal + paymentAmount > record.total) {
       return res.status(400).json({ message: 'Kiasi kinazidi deni lililobaki' });
     }
     const payment = {
@@ -167,15 +167,12 @@ router.post('/:id/payments', async (req, res) => {
       reference,
       note,
       method: 'Manual',
-      status: 'approved',
-      approvedAt: new Date(),
-      receiptNumber: `MW-${Date.now().toString(36).toUpperCase()}`
+      status: 'pending'
     };
     record.payments.push(payment);
-    record.status = approvedTotal + paymentAmount >= record.total ? 'Imelipwa' : 'Haijalipwa';
     await record.save();
     audit(req, 'payment_created', record._id, { amount: paymentAmount, reference });
-    res.status(201).json({ message: record.status === 'Imelipwa' ? 'Malipo yamehifadhiwa. Risiti iko tayari.' : 'Malipo yamehifadhiwa.', record });
+    res.status(201).json({ message: 'Malipo yamewasilishwa. Yanasubiri idhini ya admin.', record });
   } catch (error) {
     console.error('Payment create failed:', error.message);
     res.status(500).json({ message: 'Hitilafu ya server' });

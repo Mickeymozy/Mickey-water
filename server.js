@@ -2,11 +2,14 @@ const path = require('path');
 const express = require('express');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
+const bcrypt = require('bcryptjs');
 const dotenv = require('dotenv');
 dotenv.config();
 const { connectDB, databaseStatus } = require('./config/db');
+const User = require('./models/User');
 const authRoutes = require('./routes/auth');
 const recordRoutes = require('./routes/records');
+const adminRoutes = require('./routes/admin');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -14,9 +17,28 @@ const JWT_SECRET = process.env.JWT_SECRET || process.env.jwt_secret || 'change_t
 if (!process.env.JWT_SECRET && !process.env.jwt_secret) {
   console.warn('WARNING: JWT_SECRET si imewekwa. Tumia .env kwa usalama au weka environment variable kwenye deployment.');
 }
+if (process.env.NODE_ENV === 'production' && JWT_SECRET === 'change_this_secret') {
+  throw new Error('JWT_SECRET lazima iwekwe kwenye production');
+}
 
 const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 30, standardHeaders: true, legacyHeaders: false });
 const allowedOrigins = process.env.CLIENT_ORIGIN ? process.env.CLIENT_ORIGIN.split(',').map(origin => origin.trim()) : true;
+
+async function ensureAdmin() {
+  const email = String(process.env.ADMIN_EMAIL || '').trim().toLowerCase();
+  const password = String(process.env.ADMIN_PASSWORD || '');
+  if (!email || password.length < 8) return;
+  const existing = await User.findOne({ email });
+  if (existing) {
+    if (existing.role !== 'admin') {
+      existing.role = 'admin';
+      await existing.save();
+    }
+    return;
+  }
+  await User.create({ name: 'Administrator', email, password: await bcrypt.hash(password, 12), role: 'admin' });
+  console.log(`Admin account imeandaliwa: ${email}`);
+}
 
 app.use(cors({ origin: allowedOrigins }));
 app.use(express.json({ limit: '1mb' }));
@@ -35,6 +57,7 @@ app.use('/api', async (req, res, next) => {
 
 app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/records', recordRoutes);
+app.use('/api/admin', adminRoutes);
 
 app.get('/api/ping', (req, res) => res.json({ message: 'pong', database: databaseStatus() }));
 
@@ -52,6 +75,7 @@ app.use((error, req, res, next) => {
 
 if (require.main === module) {
   connectDB()
+    .then(ensureAdmin)
     .then(() => app.listen(PORT, () => {
       console.log(`Server inaendesha kwenye http://localhost:${PORT}`);
     }))

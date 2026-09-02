@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const auditLogSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  action: { type: String, required: true, enum: ['record_created', 'record_updated', 'record_deleted', 'payment_created', 'account_deleted'] },
+  action: { type: String, required: true, enum: ['record_created', 'record_updated', 'record_deleted', 'payment_created', 'payment_approved', 'payment_rejected', 'sms_sent', 'account_deleted'] },
   recordId: { type: mongoose.Schema.Types.ObjectId, ref: 'Record' },
   metadata: { type: mongoose.Schema.Types.Mixed, default: {} },
   createdAt: { type: Date, default: Date.now }

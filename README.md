@@ -72,9 +72,8 @@ Password reset email inahitaji SMTP settings zilizo hapo juu. Backup ya MongoDB 
    vercel --prod
    ```
 
-## Default admin
-- Email: `admin@admin.com`
-- Password: `Admin123`
+## Admin
+Weka `ADMIN_EMAIL` na `ADMIN_PASSWORD` kwenye environment. Server itaunda admin mara ya kwanza inapounganishwa na database, au itampa admin role akaunti hiyo ikiwa tayari ipo.
 
 ## Pages
 - `/` — login page
