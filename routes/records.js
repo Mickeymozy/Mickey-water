@@ -20,7 +20,54 @@ function escapeRegExp(value) {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+function csvValue(value) {
+  return `"${String(value ?? '').replace(/"/g, '""')}"`;
+}
+
+function recordsCsv(records) {
+  const header = ['Invoice', 'Mteja', 'Simu', 'Units', 'Deni la nyuma', 'Jumla', 'Hali', 'Tarehe'];
+  const rows = records.map(record => [
+    record.invoiceNumber || '',
+    record.customerName,
+    record.phone,
+    record.units,
+    record.previousDebt || 0,
+    record.total,
+    record.status,
+    new Date(record.date).toISOString().slice(0, 10)
+  ]);
+  return [header, ...rows].map(row => row.map(csvValue).join(',')).join('\n');
+}
+
 router.use(authMiddleware);
+
+router.post('/send-csv', async (req, res) => {
+  try {
+    const { phone, recordIds } = req.body;
+    if (!phone || !String(phone).trim()) {
+      return res.status(400).json({ message: 'Weka namba ya simu ya kutuma CSV' });
+    }
+
+    const query = { createdBy: req.user.userId };
+    if (Array.isArray(recordIds)) query._id = { $in: recordIds };
+    const records = await Record.find(query)
+      .select('invoiceNumber customerName phone units previousDebt total status date')
+      .sort({ date: -1 })
+      .lean();
+    const csv = recordsCsv(records);
+    if (csv.length > 1600) {
+      return res.status(400).json({ message: 'CSV ni ndefu kuliko ujumbe mmoja wa SMS. Tuma records chache kwa kutumia filter.' });
+    }
+
+    const result = await sendSMS(phone, csv);
+    audit(req, 'sms_sent', undefined, { messageId: result.messageId || result.sid, type: 'csv', to: result.to });
+    res.json({ message: 'CSV imetumwa kwa SMS', result });
+  } catch (error) {
+    console.error('CSV SMS send failed:', error.message);
+    const status = error.code === 'SMS_NOT_CONFIGURED' || error.code === 'SMS_PROVIDER_ERROR' ? 503 : 400;
+    res.status(status).json({ message: error.message });
+  }
+});
 
 router.post('/', async (req, res) => {
   try {
