@@ -28,18 +28,18 @@ const allowedOrigins = process.env.CLIENT_ORIGIN ? process.env.CLIENT_ORIGIN.spl
 
 async function ensureAdmin() {
   const defaultEmail = 'mickidadyhamza@gmail.com';
-  const defaultPassword = 'Mickey24@';
   const email = String(process.env.ADMIN_EMAIL || defaultEmail).trim().toLowerCase();
-  const password = String(process.env.ADMIN_PASSWORD || defaultPassword);
-  if (!process.env.ADMIN_EMAIL || !process.env.ADMIN_PASSWORD) {
-    console.warn(`ADMIN_EMAIL/ADMIN_PASSWORD hazijawekwa. Inatumika admin default: ${email}`);
-  }
+  const password = String(process.env.ADMIN_PASSWORD || '').trim();
   const existing = await User.findOne({ email });
   if (existing) {
     if (existing.role !== 'admin') {
       existing.role = 'admin';
       await existing.save();
     }
+    return;
+  }
+  if (password.length < 8) {
+    console.warn(`ADMIN_PASSWORD haijawekwa au ni fupi. Admin mpya hawezi kuundwa kwa email ${email}.`);
     return;
   }
   await User.create({ name: 'Administrator', email, password: await bcrypt.hash(password, 12), role: 'admin' });

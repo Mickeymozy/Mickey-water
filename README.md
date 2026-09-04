@@ -23,8 +23,8 @@ Simple water billing web app with MongoDB, user/admin login, and admin editing.
    TAPSA_API_KEY=your_tapsa_api_key
    TAPSA_SENDER_ID=TAPSA
    CLIENT_ORIGIN=http://localhost:3000
-   ADMIN_EMAIL=admin@admin.com
-   ADMIN_PASSWORD=Admin12324@
+   ADMIN_EMAIL=mickidadyhamza@gmail.com
+   ADMIN_PASSWORD=weka_password_yako_ya_angalau_herufi_8
    ```
 3. Start MongoDB locally or use MongoDB Atlas.
 
@@ -73,7 +73,7 @@ Password reset email inahitaji SMTP settings zilizo hapo juu. Backup ya MongoDB 
    ```
 
 ## Admin
-Weka `ADMIN_EMAIL` na `ADMIN_PASSWORD` kwenye environment. Server itaunda admin mara ya kwanza inapounganishwa na database, au itampa admin role akaunti hiyo ikiwa tayari ipo.
+`ADMIN_EMAIL` ikikosekana hutumia `mickidadyhamza@gmail.com`. Hakuna password ya default iliyowekwa kwenye code: weka `ADMIN_PASSWORD` kwenye environment yenye angalau herufi 8 ili server iweze kuunda admin mpya. Ikiwa admin huyo tayari yupo, server itaendelea kumpa admin role bila kubadili password yake.
 
 ## Pages
 - `/` — login page
