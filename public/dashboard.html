@@ -75,6 +75,10 @@ if(user.role==='admin'){const adminLink=document.createElement('a');adminLink.cl
   @media(max-width:760px){.shell{padding:22px 16px 48px}.topbar{margin-bottom:40px}.hero-note{max-width:none}.view-tabs{width:100%}.view-tab{flex:1}.panel-head{padding-bottom:12px}}
 </style>
 <style>.box,.panel,.stat{backdrop-filter:none!important}</style>
+<style>
+  body{font-family:"Trebuchet MS",Verdana,sans-serif;background:linear-gradient(145deg,#eef6f2 0%,#f7faf8 55%,#e6f0ec 100%)}.shell{max-width:1240px;padding:30px 36px 72px}.brand,.account-chip,.logout,.action,.filter,.view-tab,.field label,.toolbar input{font-family:"Trebuchet MS",Verdana,sans-serif}.topbar{margin-bottom:52px;padding-bottom:20px;border-bottom:1px solid var(--line)}.mark{border-radius:12px;box-shadow:4px 4px 0 var(--lime)}.hero{gap:58px;margin-bottom:36px}.hero h1{font-family:Georgia,"Times New Roman",serif;line-height:.88}.hero-note{background:rgba(255,255,255,.62);border-radius:0 10px 10px 0;padding:18px 20px}.stat,.panel{border-radius:14px;border-color:var(--line);box-shadow:0 18px 48px rgba(31,41,55,.09)}.stat{padding:24px}.panel{padding:28px}.panel h2{font-family:Georgia,"Times New Roman",serif}.field input,.toolbar input{border-radius:9px;padding:13px}.primary{border-radius:9px;transition:transform .2s}.primary:hover{transform:translateY(-1px)}.view-tabs{border-radius:10px;padding:4px}.view-tab{border-radius:7px}.action{border-radius:7px}.status{border-radius:999px}.preview{border-radius:0 9px 9px 0}
+  @media(max-width:760px){.shell{padding:22px 18px 48px}.topbar{margin-bottom:38px}.panel{padding:21px}}
+</style>
 <script>
 const historyPanel=document.querySelectorAll('.panel')[1];
 const utilityBar=document.createElement('div');utilityBar.className='utility-bar';utilityBar.innerHTML='<input class="csv-phone" id="csvPhone" type="tel" placeholder="Namba ya kutuma CSV" aria-label="Namba ya kutuma CSV"><button class="utility-button" id="sendCsv">Tuma CSV</button><button class="utility-button" id="printSummary">Print muhtasari</button>';historyPanel.insertBefore(utilityBar,historyPanel.querySelector('.toolbar'));
