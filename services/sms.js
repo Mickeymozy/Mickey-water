@@ -56,6 +56,31 @@ function twilioConfigured() {
   );
 }
 
+async function smsStatus() {
+  const provider = tapsaConfigured() ? 'TAPSA' : twilioConfigured() ? 'Twilio' : null;
+  if (!provider) return { provider: null, configured: false, online: false, message: 'SMS API haijawekwa' };
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 5000);
+  try {
+    const url = provider === 'TAPSA'
+      ? 'https://api.smstapsa.site/v1/sms/send'
+      : `https://api.twilio.com/2010-04-01/Accounts/${encodeURIComponent(process.env.TWILIO_ACCOUNT_SID)}.json`;
+    const options = { method: provider === 'TAPSA' ? 'HEAD' : 'GET', signal: controller.signal };
+    if (provider === 'Twilio') {
+      options.headers = {
+        Authorization: `Basic ${Buffer.from(`${process.env.TWILIO_ACCOUNT_SID}:${process.env.TWILIO_AUTH_TOKEN}`).toString('base64')}`
+      };
+    }
+    const response = await fetch(url, options);
+    return { provider, configured: true, online: true, message: `${provider} inapatikana`, status: response.status };
+  } catch (error) {
+    return { provider, configured: true, online: false, message: `${provider} haipatikani` };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 async function sendSMS(phone, body) {
   const to = normalizePhone(phone);
   if (!to || !/^\+\d{10,15}$/.test(to)) {
@@ -102,4 +127,4 @@ async function sendSMS(phone, body) {
   return { sid: data.sid, to };
 }
 
-module.exports = { sendSMS, normalizePhone, smsConfigured };
+module.exports = { sendSMS, normalizePhone, smsConfigured, smsStatus };

@@ -3,6 +3,7 @@ const Record = require('../models/Record');
 const User = require('../models/User');
 const AuditLog = require('../models/AuditLog');
 const { adminMiddleware } = require('../middleware/auth');
+const { sendSMS } = require('../services/sms');
 
 const router = express.Router();
 router.use(adminMiddleware);
@@ -12,6 +13,44 @@ function audit(req, action, recordId, metadata = {}) {
     console.error(`Audit log failed (${action}):`, error.message);
   });
 }
+
+function csvValue(value) {
+  return `"${String(value ?? '').replace(/"/g, '""')}"`;
+}
+
+function recordsCsv(records) {
+  const header = ['Invoice', 'Mteja', 'Simu', 'Units', 'Deni la nyuma', 'Jumla', 'Hali', 'Tarehe'];
+  const rows = records.map(record => [
+    record.invoiceNumber || '', record.customerName, record.phone, record.units,
+    record.previousDebt || 0, record.total, record.status,
+    new Date(record.date).toISOString().slice(0, 10)
+  ]);
+  return [header, ...rows].map(row => row.map(csvValue).join(',')).join('\n');
+}
+
+router.post('/send-csv', async (req, res) => {
+  try {
+    const { phone } = req.body;
+    if (!phone || !String(phone).trim()) {
+      return res.status(400).json({ message: 'Weka namba ya simu ya kutuma CSV' });
+    }
+    const records = await Record.find()
+      .select('invoiceNumber customerName phone units previousDebt total status date')
+      .sort({ date: -1 })
+      .lean();
+    const csv = recordsCsv(records);
+    if (csv.length > 1600) {
+      return res.status(400).json({ message: 'CSV ni ndefu kuliko SMS moja. Punguza records kabla ya kutuma.' });
+    }
+    const result = await sendSMS(phone, csv);
+    audit(req, 'sms_sent', undefined, { messageId: result.messageId || result.sid, type: 'admin_csv', to: result.to });
+    res.json({ message: 'CSV ya mfumo imetumwa kwa SMS', result });
+  } catch (error) {
+    console.error('Admin CSV SMS send failed:', error.message);
+    const status = error.code === 'SMS_NOT_CONFIGURED' || error.code === 'SMS_PROVIDER_ERROR' ? 503 : 400;
+    res.status(status).json({ message: error.message });
+  }
+});
 
 router.get('/summary', async (req, res) => {
   try {

@@ -6,6 +6,8 @@ const bcrypt = require('bcryptjs');
 const dotenv = require('dotenv');
 dotenv.config();
 const { connectDB, databaseStatus } = require('./config/db');
+const { adminMiddleware } = require('./middleware/auth');
+const { smsStatus } = require('./services/sms');
 const User = require('./models/User');
 const authRoutes = require('./routes/auth');
 const recordRoutes = require('./routes/records');
@@ -44,6 +46,16 @@ app.use(cors({ origin: allowedOrigins }));
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
+
+app.get('/api/health', adminMiddleware, async (req, res) => {
+  const sms = await smsStatus();
+  const database = databaseStatus();
+  res.json({
+    api: { online: true, message: 'API iko online' },
+    database: { ...database, online: database.connected, message: database.connected ? 'Database iko online' : 'Database iko offline' },
+    sms: { ...sms, online: sms.configured && sms.online }
+  });
+});
 
 app.use('/api', async (req, res, next) => {
   try {
