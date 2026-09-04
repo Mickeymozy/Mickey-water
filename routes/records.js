@@ -55,8 +55,8 @@ router.post('/send-csv', async (req, res) => {
       .sort({ date: -1 })
       .lean();
     const csv = recordsCsv(records);
-    if (csv.length > 1600) {
-      return res.status(400).json({ message: 'CSV ni ndefu kuliko ujumbe mmoja wa SMS. Tuma records chache kwa kutumia filter.' });
+    if (csv.length > 160) {
+      return res.status(400).json({ message: 'SMSTAPSA inaruhusu herufi 160 kwa ujumbe. Punguza records kwa kutumia filter.' });
     }
 
     const result = await sendSMS(phone, csv);
@@ -176,8 +176,8 @@ router.put('/:id', async (req, res) => {
 router.post('/:id/messages', async (req, res) => {
   try {
     const { message } = req.body;
-    if (!message || String(message).trim().length > 1600) {
-      return res.status(400).json({ message: 'Ujumbe si sahihi' });
+    if (!message || String(message).trim().length > 160) {
+      return res.status(400).json({ message: 'Ujumbe wa SMS usizidi herufi 160' });
     }
     const record = await Record.findOne({ _id: req.params.id, createdBy: req.user.userId });
     if (!record) return res.status(404).json({ message: 'Bill haipo' });

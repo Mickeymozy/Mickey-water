@@ -15,7 +15,7 @@ function smsConfigured() {
 }
 
 function tapsaConfigured() {
-  return Boolean(tapsaApiKey() && process.env.TAPSA_SENDER_ID?.trim());
+  return Boolean(tapsaApiKey());
 }
 
 function tapsaApiKey() {
@@ -29,12 +29,12 @@ async function sendWithTapsa(phone, body) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': tapsaApiKey()
+      'X-API-Key': tapsaApiKey()
     },
     body: JSON.stringify({
       phoneNumbers: [normalizePhone(phone).slice(1)],
-      message: String(body).slice(0, 1600),
-      senderId: process.env.TAPSA_SENDER_ID.trim()
+      message: String(body).slice(0, 160),
+      ...(process.env.TAPSA_SENDER_ID?.trim() ? { senderId: process.env.TAPSA_SENDER_ID.trim() } : {})
     }),
     signal: controller.signal
   });
@@ -45,7 +45,8 @@ async function sendWithTapsa(phone, body) {
     error.code = 'SMS_PROVIDER_ERROR';
     throw error;
   }
-  return { messageId: data.data?.messageId, to: normalizePhone(phone) };
+  const recipient = data.recipients?.[0];
+  return { messageId: recipient?.messageId || data.data?.messageId, to: recipient?.number || normalizePhone(phone), remainingBalance: data.remainingBalance };
 }
 
 function twilioConfigured() {
@@ -64,16 +65,24 @@ async function smsStatus() {
   const timeout = setTimeout(() => controller.abort(), 5000);
   try {
     const url = provider === 'TAPSA'
-      ? 'https://api.smstapsa.site/v1/sms/send'
+      ? 'https://api.smstapsa.site/v1/account/balance'
       : `https://api.twilio.com/2010-04-01/Accounts/${encodeURIComponent(process.env.TWILIO_ACCOUNT_SID)}.json`;
-    const options = { method: provider === 'TAPSA' ? 'HEAD' : 'GET', signal: controller.signal };
+    const options = { method: 'GET', signal: controller.signal };
+    if (provider === 'TAPSA') options.headers = { 'X-API-Key': tapsaApiKey() };
     if (provider === 'Twilio') {
       options.headers = {
         Authorization: `Basic ${Buffer.from(`${process.env.TWILIO_ACCOUNT_SID}:${process.env.TWILIO_AUTH_TOKEN}`).toString('base64')}`
       };
     }
     const response = await fetch(url, options);
-    return { provider, configured: true, online: true, message: `${provider} inapatikana`, status: response.status };
+    const online = response.ok;
+    return {
+      provider,
+      configured: true,
+      online,
+      message: online ? `${provider} inapatikana` : `${provider} imekataa API key (${response.status})`,
+      status: response.status
+    };
   } catch (error) {
     return { provider, configured: true, online: false, message: `${provider} haipatikani` };
   } finally {
@@ -103,7 +112,7 @@ async function sendSMS(phone, body) {
   const params = new URLSearchParams({
     To: to,
     From: process.env.TWILIO_PHONE_NUMBER,
-    Body: String(body).slice(0, 1600)
+    Body: String(body).slice(0, 160)
   });
   const response = await fetch(
     `https://api.twilio.com/2010-04-01/Accounts/${encodeURIComponent(process.env.TWILIO_ACCOUNT_SID)}/Messages.json`,
