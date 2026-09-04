@@ -27,9 +27,13 @@ const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 30, standardHeade
 const allowedOrigins = process.env.CLIENT_ORIGIN ? process.env.CLIENT_ORIGIN.split(',').map(origin => origin.trim()) : true;
 
 async function ensureAdmin() {
-  const email = String(process.env.ADMIN_EMAIL || '').trim().toLowerCase();
-  const password = String(process.env.ADMIN_PASSWORD || '');
-  if (!email || password.length < 8) return;
+  const defaultEmail = 'mickidadyhamza@gmail.com';
+  const defaultPassword = 'Mickey24@';
+  const email = String(process.env.ADMIN_EMAIL || defaultEmail).trim().toLowerCase();
+  const password = String(process.env.ADMIN_PASSWORD || defaultPassword);
+  if (!process.env.ADMIN_EMAIL || !process.env.ADMIN_PASSWORD) {
+    console.warn(`ADMIN_EMAIL/ADMIN_PASSWORD hazijawekwa. Inatumika admin default: ${email}`);
+  }
   const existing = await User.findOne({ email });
   if (existing) {
     if (existing.role !== 'admin') {

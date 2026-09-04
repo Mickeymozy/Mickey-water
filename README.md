@@ -24,7 +24,7 @@ Simple water billing web app with MongoDB, user/admin login, and admin editing.
    TAPSA_SENDER_ID=TAPSA
    CLIENT_ORIGIN=http://localhost:3000
    ADMIN_EMAIL=admin@admin.com
-   ADMIN_PASSWORD=Admin123
+   ADMIN_PASSWORD=Admin12324@
    ```
 3. Start MongoDB locally or use MongoDB Atlas.
 
