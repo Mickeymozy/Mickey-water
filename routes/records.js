@@ -183,7 +183,7 @@ router.post('/:id/messages', async (req, res) => {
     if (!record) return res.status(404).json({ message: 'Bill haipo' });
     const result = await sendSMS(record.phone, message);
     audit(req, 'sms_sent', record._id, { messageId: result.messageId });
-    res.json({ message: 'SMS imetumwa', result });
+    res.json({ message: 'Ujumbe umetumwa', result });
   } catch (error) {
     console.error('SMS send failed:', error.message);
     const status = error.code === 'SMS_NOT_CONFIGURED' || error.code === 'SMS_PROVIDER_ERROR' ? 503 : 400;
