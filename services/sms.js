@@ -33,7 +33,7 @@ async function sendWithTapsa(phone, body) {
     },
     body: JSON.stringify({
       phoneNumbers: [normalizePhone(phone).slice(1)],
-      message: String(body).slice(0, 160),
+      message: String(body),
       ...(process.env.TAPSA_SENDER_ID?.trim() ? { senderId: process.env.TAPSA_SENDER_ID.trim() } : {})
     }),
     signal: controller.signal
@@ -112,7 +112,7 @@ async function sendSMS(phone, body) {
   const params = new URLSearchParams({
     To: to,
     From: process.env.TWILIO_PHONE_NUMBER,
-    Body: String(body).slice(0, 160)
+    Body: String(body)
   });
   const response = await fetch(
     `https://api.twilio.com/2010-04-01/Accounts/${encodeURIComponent(process.env.TWILIO_ACCOUNT_SID)}/Messages.json`,

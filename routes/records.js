@@ -176,8 +176,8 @@ router.put('/:id', async (req, res) => {
 router.post('/:id/messages', async (req, res) => {
   try {
     const { message } = req.body;
-    if (!message || String(message).trim().length > 160) {
-      return res.status(400).json({ message: 'Ujumbe wa SMS usizidi herufi 160' });
+    if (!message || !String(message).trim()) {
+      return res.status(400).json({ message: 'Weka ujumbe wa SMS' });
     }
     const record = await Record.findOne({ _id: req.params.id, createdBy: req.user.userId });
     if (!record) return res.status(404).json({ message: 'Bill haipo' });
