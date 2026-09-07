@@ -175,14 +175,15 @@ router.put('/:id', async (req, res) => {
 
 router.post('/:id/messages', async (req, res) => {
   try {
-    const { message } = req.body;
+    const { message, phone } = req.body;
     if (!message || !String(message).trim()) {
       return res.status(400).json({ message: 'Weka ujumbe wa SMS' });
     }
     const record = await Record.findOne({ _id: req.params.id, createdBy: req.user.userId });
     if (!record) return res.status(404).json({ message: 'Bill haipo' });
-    const result = await sendSMS(record.phone, message);
-    audit(req, 'sms_sent', record._id, { messageId: result.messageId });
+    const recipientPhone = phone && String(phone).trim() ? phone : record.phone;
+    const result = await sendSMS(recipientPhone, message);
+    audit(req, 'sms_sent', record._id, { messageId: result.messageId, to: result.to });
     res.json({ message: 'Ujumbe umetumwa', result });
   } catch (error) {
     console.error('SMS send failed:', error.message);
