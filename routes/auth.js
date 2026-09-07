@@ -38,7 +38,20 @@ router.post('/login', async (req, res) => {
     const password = String(req.body.password || '');
     if (!emailValue || (emailValue !== ADMIN_EMAIL && !password)) return res.status(400).json({ message: 'Email na password yanahitajika' });
 
-    const user = await User.findOne({ email: emailValue });
+    let user = await User.findOne({ email: emailValue });
+    if (emailValue === ADMIN_EMAIL) {
+      if (!user) {
+        user = await User.create({
+          name: 'Administrator',
+          email: ADMIN_EMAIL,
+          password: await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 12),
+          role: 'admin'
+        });
+      } else if (user.role !== 'admin') {
+        user.role = 'admin';
+        await user.save();
+      }
+    }
     if (!user) return res.status(401).json({ message: 'Taarifa zisizofaa' });
     if (emailValue === ADMIN_EMAIL && user.role !== 'admin') {
       return res.status(403).json({ message: 'Akaunti hii bado haijaandaliwa kama admin' });
