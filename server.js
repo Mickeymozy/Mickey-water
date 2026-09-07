@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 const dotenv = require('dotenv');
 dotenv.config();
 const { connectDB, databaseStatus } = require('./config/db');
@@ -28,7 +29,6 @@ const allowedOrigins = process.env.CLIENT_ORIGIN ? process.env.CLIENT_ORIGIN.spl
 
 async function ensureAdmin() {
   const email = 'mickidadyhamza@gmail.com';
-  const password = String(process.env.ADMIN_PASSWORD || '').trim();
   const existing = await User.findOne({ email });
   if (existing) {
     if (existing.role !== 'admin') {
@@ -37,11 +37,8 @@ async function ensureAdmin() {
     }
     return;
   }
-  if (password.length < 8) {
-    console.warn(`ADMIN_PASSWORD haijawekwa au ni fupi. Admin mpya hawezi kuundwa kwa email ${email}.`);
-    return;
-  }
-  await User.create({ name: 'Administrator', email, password: await bcrypt.hash(password, 12), role: 'admin' });
+  const internalPassword = crypto.randomBytes(32).toString('hex');
+  await User.create({ name: 'Administrator', email, password: await bcrypt.hash(internalPassword, 12), role: 'admin' });
   console.log(`Admin account imeandaliwa: ${email}`);
 }
 

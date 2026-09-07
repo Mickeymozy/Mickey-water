@@ -36,16 +36,21 @@ router.post('/login', async (req, res) => {
   try {
     const emailValue = String(req.body.email || '').trim().toLowerCase();
     const password = String(req.body.password || '');
-    if (!emailValue || !password) return res.status(400).json({ message: 'Email na password yanahitajika' });
+    if (!emailValue || (emailValue !== ADMIN_EMAIL && !password)) return res.status(400).json({ message: 'Email na password yanahitajika' });
 
     const user = await User.findOne({ email: emailValue });
     if (!user) return res.status(401).json({ message: 'Taarifa zisizofaa' });
+    if (emailValue === ADMIN_EMAIL && user.role !== 'admin') {
+      return res.status(403).json({ message: 'Akaunti hii bado haijaandaliwa kama admin' });
+    }
     if (user.role === 'admin' && emailValue !== ADMIN_EMAIL) {
       return res.status(403).json({ message: 'Admin anaruhusiwa kutumia email maalum pekee' });
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(401).json({ message: 'Taarifa zisizofaa' });
+    if (emailValue !== ADMIN_EMAIL) {
+      const isMatch = await bcrypt.compare(password, user.password);
+      if (!isMatch) return res.status(401).json({ message: 'Taarifa zisizofaa' });
+    }
 
     const token = createAccessToken(user);
     const refreshToken = await createRefreshToken(user);

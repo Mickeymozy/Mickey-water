@@ -23,7 +23,6 @@ Simple water billing web app with MongoDB, user/admin login, and admin editing.
    TAPSA_API_KEY=your_tapsa_api_key
    TAPSA_SENDER_ID=TAPSA
    CLIENT_ORIGIN=http://localhost:3000
-   ADMIN_PASSWORD=weka_password_yako_ya_angalau_herufi_8
    ```
 3. Start MongoDB locally or use MongoDB Atlas.
 
@@ -48,7 +47,6 @@ Password reset email inahitaji SMTP settings zilizo hapo juu. Backup ya MongoDB 
 4. Set these environment variables in Render:
    - `MONGODB_URI`
    - `JWT_SECRET`
-   - `ADMIN_PASSWORD`
    - `NODE_ENV=production`
    - `CLIENT_ORIGIN` (optional; comma-separated allowed frontend origins)
 5. Deploy and confirm the service starts successfully.
@@ -60,7 +58,6 @@ Password reset email inahitaji SMTP settings zilizo hapo juu. Backup ya MongoDB 
 4. Configure environment variables in Vercel:
    - `MONGODB_URI`
    - `JWT_SECRET`
-   - `ADMIN_PASSWORD`
    - `NODE_ENV=production`
 
    Note: Use the exact variable names above. If you set `mongodb_url` instead of `MONGODB_URI`, the app will not find the value unless your code has fallback support.
@@ -70,7 +67,7 @@ Password reset email inahitaji SMTP settings zilizo hapo juu. Backup ya MongoDB 
    ```
 
 ## Admin
-Admin anatumia email maalum `mickidadyhamza@gmail.com`. Hakuna password ya default iliyowekwa kwenye code: weka `ADMIN_PASSWORD` kwenye environment yenye angalau herufi 8 ili server iweze kuunda admin mpya. Ikiwa admin huyo tayari yupo, server itaendelea kumpa admin role bila kubadili password yake.
+Admin anaingia kwa kutumia email maalum `mickidadyhamza@gmail.com` pekee. Admin account huandaliwa na server bila kuhitaji `ADMIN_PASSWORD`; users wa kawaida bado hutumia password zao.
 
 ## Pages
 - `/` — login page
