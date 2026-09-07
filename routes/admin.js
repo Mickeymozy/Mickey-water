@@ -39,9 +39,6 @@ router.post('/send-csv', async (req, res) => {
       .sort({ date: -1 })
       .lean();
     const csv = recordsCsv(records);
-    if (csv.length > 160) {
-      return res.status(400).json({ message: 'SMSTAPSA inaruhusu herufi 160 kwa ujumbe. Punguza records kabla ya kutuma.' });
-    }
     const result = await sendSMS(phone, csv);
     audit(req, 'sms_sent', undefined, { messageId: result.messageId || result.sid, type: 'admin_csv', to: result.to });
     res.json({ message: 'CSV ya mfumo imetumwa kwa SMS', result });
