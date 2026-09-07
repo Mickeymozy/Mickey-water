@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const JWT_SECRET = process.env.JWT_SECRET || process.env.jwt_secret || 'change_this_secret';
+const ADMIN_EMAIL = 'mickidadyhamza@gmail.com';
 
 function authMiddleware(req, res, next) {
   const authHeader = req.headers.authorization;
@@ -20,7 +21,7 @@ function authMiddleware(req, res, next) {
 
 function adminMiddleware(req, res, next) {
   authMiddleware(req, res, () => {
-    if (req.user.role !== 'admin') {
+    if (req.user.role !== 'admin' || String(req.user.email || '').toLowerCase() !== ADMIN_EMAIL) {
       return res.status(403).json({ message: 'Inaruhusiwa tu kwa admin' });
     }
     next();

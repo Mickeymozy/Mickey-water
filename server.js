@@ -27,8 +27,7 @@ const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 30, standardHeade
 const allowedOrigins = process.env.CLIENT_ORIGIN ? process.env.CLIENT_ORIGIN.split(',').map(origin => origin.trim()) : true;
 
 async function ensureAdmin() {
-  const defaultEmail = 'mickidadyhamza@gmail.com';
-  const email = String(process.env.ADMIN_EMAIL || defaultEmail).trim().toLowerCase();
+  const email = 'mickidadyhamza@gmail.com';
   const password = String(process.env.ADMIN_PASSWORD || '').trim();
   const existing = await User.findOne({ email });
   if (existing) {

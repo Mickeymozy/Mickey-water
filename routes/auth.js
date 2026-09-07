@@ -11,13 +11,14 @@ const nodemailer = require('nodemailer');
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || process.env.jwt_secret || 'change_this_secret';
+const ADMIN_EMAIL = 'mickidadyhamza@gmail.com';
 
 function hashToken(token) {
   return crypto.createHash('sha256').update(token).digest('hex');
 }
 
 function createAccessToken(user) {
-  return jwt.sign({ userId: user._id, role: user.role, type: 'access' }, JWT_SECRET, { expiresIn: '15m' });
+  return jwt.sign({ userId: user._id, email: user.email, role: user.role, type: 'access' }, JWT_SECRET, { expiresIn: '15m' });
 }
 
 async function createRefreshToken(user) {
@@ -39,6 +40,9 @@ router.post('/login', async (req, res) => {
 
     const user = await User.findOne({ email: emailValue });
     if (!user) return res.status(401).json({ message: 'Taarifa zisizofaa' });
+    if (user.role === 'admin' && emailValue !== ADMIN_EMAIL) {
+      return res.status(403).json({ message: 'Admin anaruhusiwa kutumia email maalum pekee' });
+    }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(401).json({ message: 'Taarifa zisizofaa' });
@@ -111,6 +115,7 @@ router.post('/register', async (req, res) => {
     const email = String(req.body.email || '').trim().toLowerCase();
     const password = String(req.body.password || '');
     if (!name || !email || !password) return res.status(400).json({ message: 'Jaza maeneo yote' });
+    if (email === ADMIN_EMAIL) return res.status(403).json({ message: 'Email hii imetengwa kwa admin' });
     if (name.length < 2 || name.length > 100) return res.status(400).json({ message: 'Jina si sahihi' });
     if (password.length < 8) return res.status(400).json({ message: 'Nywila iwe na angalau herufi 8' });
 

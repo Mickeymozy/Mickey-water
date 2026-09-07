@@ -23,12 +23,11 @@ Simple water billing web app with MongoDB, user/admin login, and admin editing.
    TAPSA_API_KEY=your_tapsa_api_key
    TAPSA_SENDER_ID=TAPSA
    CLIENT_ORIGIN=http://localhost:3000
-   ADMIN_EMAIL=mickidadyhamza@gmail.com
    ADMIN_PASSWORD=weka_password_yako_ya_angalau_herufi_8
    ```
 3. Start MongoDB locally or use MongoDB Atlas.
 
-SMS za moja kwa moja zinatumia TAPSA. Weka API key halisi, si maandishi `your_tapsa_api_key`, kwenye environment ya server. `TAPSA_API_KEY` inahitajika; `TAPSA_SENDER_ID` ni optional kwa kuwa TAPSA hutumia `TAPSA` kwa default. Ujumbe wa SMS una kikomo cha herufi 160.
+SMS za moja kwa moja zinatumia TAPSA. Weka API key halisi, si maandishi `your_tapsa_api_key`, kwenye environment ya server. `TAPSA_API_KEY` inahitajika; `TAPSA_SENDER_ID` ni optional kwa kuwa TAPSA hutumia `TAPSA` kwa default.
 
 Password reset email inahitaji SMTP settings zilizo hapo juu. Backup ya MongoDB inaendeshwa kwa `npm run backup` baada ya kusakinisha MongoDB Database Tools (`mongodump`). Backup files zinawekwa kwenye `backups/`, ambayo haifuatiliwi na Git.
 4. Run the app:
@@ -49,7 +48,6 @@ Password reset email inahitaji SMTP settings zilizo hapo juu. Backup ya MongoDB 
 4. Set these environment variables in Render:
    - `MONGODB_URI`
    - `JWT_SECRET`
-   - `ADMIN_EMAIL`
    - `ADMIN_PASSWORD`
    - `NODE_ENV=production`
    - `CLIENT_ORIGIN` (optional; comma-separated allowed frontend origins)
@@ -62,7 +60,6 @@ Password reset email inahitaji SMTP settings zilizo hapo juu. Backup ya MongoDB 
 4. Configure environment variables in Vercel:
    - `MONGODB_URI`
    - `JWT_SECRET`
-   - `ADMIN_EMAIL`
    - `ADMIN_PASSWORD`
    - `NODE_ENV=production`
 
@@ -73,7 +70,7 @@ Password reset email inahitaji SMTP settings zilizo hapo juu. Backup ya MongoDB 
    ```
 
 ## Admin
-`ADMIN_EMAIL` ikikosekana hutumia `mickidadyhamza@gmail.com`. Hakuna password ya default iliyowekwa kwenye code: weka `ADMIN_PASSWORD` kwenye environment yenye angalau herufi 8 ili server iweze kuunda admin mpya. Ikiwa admin huyo tayari yupo, server itaendelea kumpa admin role bila kubadili password yake.
+Admin anatumia email maalum `mickidadyhamza@gmail.com`. Hakuna password ya default iliyowekwa kwenye code: weka `ADMIN_PASSWORD` kwenye environment yenye angalau herufi 8 ili server iweze kuunda admin mpya. Ikiwa admin huyo tayari yupo, server itaendelea kumpa admin role bila kubadili password yake.
 
 ## Pages
 - `/` — login page
