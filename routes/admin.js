@@ -99,10 +99,10 @@ router.patch('/payments/:recordId/:paymentId/approve', async (req, res) => {
     const approvedTotal = record.payments
       .filter(item => item.status === 'approved')
       .reduce((sum, item) => sum + item.amount, 0);
-    record.status = approvedTotal >= record.total ? 'Imelipwa' : 'Haijalipwa';
+    record.status = approvedTotal >= record.total ? 'Imelipwa' : approvedTotal > 0 ? 'Imelipwa nusu' : 'Haijalipwa';
     await record.save();
     audit(req, 'payment_approved', record._id, { amount: payment.amount, receiptNumber: payment.receiptNumber });
-    res.json({ message: 'Malipo yameidhinishwa na risiti imetengenezwa', record });
+    res.json({ message: record.status === 'Imelipwa' ? 'Malipo yamekamilika na risiti imetengenezwa' : 'Malipo ya sehemu yameidhinishwa, deni bado lipo', record });
   } catch (error) {
     console.error('Payment approval failed:', error.message);
     res.status(500).json({ message: 'Imeshindikana kuidhinisha malipo' });

@@ -24,7 +24,7 @@ const recordSchema = new mongoose.Schema({
   previousDebt: { type: Number, required: true, min: 0, default: 0 },
   currentBill: { type: Number, required: true, min: 0, default: 0 },
   total: { type: Number, required: true },
-  status: { type: String, enum: ['Haijalipwa', 'Imelipwa'], default: 'Haijalipwa' },
+  status: { type: String, enum: ['Haijalipwa', 'Imelipwa nusu', 'Imelipwa'], default: 'Haijalipwa' },
   payments: { type: [paymentSchema], default: [] },
   date: { type: Date, required: true },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
