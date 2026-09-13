@@ -203,9 +203,16 @@ router.post('/:id/payments', async (req, res) => {
     }
     const submittedTotal = record.payments
       .filter(payment => payment.status === 'pending' || payment.status === 'approved')
-      .reduce((sum, payment) => sum + payment.amount, 0);
-    if (submittedTotal + paymentAmount > record.total) {
-      return res.status(400).json({ message: 'Kiasi kinazidi deni lililobaki' });
+      .reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+    const remainingDebt = Math.max(0, Number(record.total || 0) - submittedTotal);
+    const duplicatePending = record.payments.some(payment => (
+      payment.status === 'pending' && Number(payment.amount || 0) === paymentAmount
+    ));
+    if (duplicatePending) {
+      return res.status(409).json({ message: `Malipo ya TZS ${paymentAmount.toLocaleString('sw-TZ')} tayari yanasubiri idhini ya admin. Deni lililobaki ni TZS ${remainingDebt.toLocaleString('sw-TZ')}.` });
+    }
+    if (paymentAmount > remainingDebt) {
+      return res.status(400).json({ message: `Kiasi kinazidi deni lililobaki. Deni lililobaki ni TZS ${remainingDebt.toLocaleString('sw-TZ')}` });
     }
     const payment = {
       amount: paymentAmount,
