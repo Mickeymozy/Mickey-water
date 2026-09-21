@@ -10,6 +10,8 @@ services:
         sync: false
       - key: TAPSA_API_KEY
         sync: false
+      - key: TAPSA_BASE_URL
+        value: https://api.smstapsa.my.id
       - key: TAPSA_SENDER_ID
         value: TAPSA
       - key: NODE_ENV

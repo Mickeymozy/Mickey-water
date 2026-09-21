@@ -22,37 +22,54 @@ function tapsaApiKey() {
   return String(process.env.TAPSA_API_KEY || process.env.TAPSA_API_TOKEN || '').trim();
 }
 
-let tapsaClientPromise;
-
-async function tapsaClient() {
-  if (!tapsaClientPromise) {
-    tapsaClientPromise = import('sms-bulk-tz').then(({ TapsaSMS }) => new TapsaSMS({
-      apiKey: tapsaApiKey(),
-      baseUrl: process.env.TAPSA_BASE_URL || 'https://api.smstapsa.site',
-      timeout: 30000
-    }));
-  }
-  return tapsaClientPromise;
-}
-
 async function sendWithTapsa(phone, body) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 30000);
+  const senderId = String(process.env.TAPSA_SENDER_ID || 'TAPSA').trim() || 'TAPSA';
+
   try {
-    const result = await (await tapsaClient()).sendSMS({
-      phoneNumbers: [normalizePhone(phone).slice(1)],
-      message: String(body),
-      ...(process.env.TAPSA_SENDER_ID?.trim() ? { senderId: process.env.TAPSA_SENDER_ID.trim() } : {})
+    const response = await fetch(`${process.env.TAPSA_BASE_URL || 'https://api.smstapsa.my.id'}/v1/sms/send`, {
+      method: 'POST',
+      signal: controller.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': tapsaApiKey()
+      },
+      body: JSON.stringify({
+        phoneNumbers: [normalizePhone(phone).slice(1)],
+        message: String(body),
+        senderId
+      })
     });
-    const recipient = result.recipients?.[0] || result.data?.recipients?.[0];
+
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok || result.success === false) {
+      const error = new Error(result.message || `SMSTAPSA imekataa ombi (${response.status}).`);
+      error.code = 'SMS_PROVIDER_ERROR';
+      error.status = response.status;
+      throw error;
+    }
+
+    const recipient = result.recipients?.find(item => item.status === 'Success') || result.recipients?.[0];
     return {
       messageId: recipient?.messageId || result.data?.messageId,
       to: recipient?.number || normalizePhone(phone),
-      remainingBalance: result.remainingBalance ?? result.data?.remainingBalance
+      senderId: result.senderId || senderId,
+      remainingBalance: result.remainingBalance
     };
   } catch (cause) {
+    if (cause.name === 'AbortError') {
+      const error = new Error('SMSTAPSA imezidi muda wa kusubiri.');
+      error.code = 'SMS_PROVIDER_ERROR';
+      throw error;
+    }
     const error = new Error(cause?.message || 'TAPSA imeshindwa kutuma SMS.');
-    error.code = 'SMS_PROVIDER_ERROR';
+    error.code = cause.code || 'SMS_PROVIDER_ERROR';
+    error.status = cause.status;
     error.cause = cause;
     throw error;
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
@@ -72,8 +89,15 @@ async function smsStatus() {
   const timeout = setTimeout(() => controller.abort(), 5000);
   try {
     if (provider === 'TAPSA') {
-      const balance = await (await tapsaClient()).getBalance();
-      return { provider, configured: true, online: true, message: 'TAPSA inapatikana', balance: balance.data?.balance, currency: balance.data?.currency };
+      const response = await fetch(`${process.env.TAPSA_BASE_URL || 'https://api.smstapsa.my.id'}/v1/account/balance`, {
+        headers: { 'X-API-Key': tapsaApiKey() },
+        signal: controller.signal
+      });
+      const balance = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        return { provider, configured: true, online: false, message: balance.message || `TAPSA imekataa API key (${response.status})`, status: response.status };
+      }
+      return { provider, configured: true, online: true, message: 'TAPSA inapatikana', balance: balance.balance, currency: balance.currency };
     }
     const url = `https://api.twilio.com/2010-04-01/Accounts/${encodeURIComponent(process.env.TWILIO_ACCOUNT_SID)}.json`;
     const options = { method: 'GET', signal: controller.signal };

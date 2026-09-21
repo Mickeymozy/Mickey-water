@@ -44,7 +44,7 @@ router.post('/send-csv', async (req, res) => {
     res.json({ message: 'CSV ya mfumo imetumwa kwa SMS', result });
   } catch (error) {
     console.error('Admin CSV SMS send failed:', error.message);
-    const status = error.code === 'SMS_NOT_CONFIGURED' || error.code === 'SMS_PROVIDER_ERROR' ? 503 : 400;
+    const status = error.status === 429 ? 429 : error.code === 'SMS_NOT_CONFIGURED' || error.code === 'SMS_PROVIDER_ERROR' ? 503 : 400;
     res.status(status).json({ message: error.message });
   }
 });
