@@ -25,7 +25,16 @@ function tapsaApiKey() {
 async function sendWithTapsa(phone, body) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 30000);
-  const senderId = String(process.env.TAPSA_SENDER_ID || 'TAPSA').trim() || 'TAPSA';
+  const senderId = String(process.env.TAPSA_SENDER_ID || '').trim();
+  const normalizedPhone = normalizePhone(phone);
+  const payload = {
+    phoneNumbers: [normalizedPhone.replace(/^\+/, '')],
+    message: String(body).slice(0, 160)
+  };
+
+  if (senderId) {
+    payload.senderId = senderId;
+  }
 
   try {
     const response = await fetch(`${process.env.TAPSA_BASE_URL || 'https://api.smstapsa.my.id'}/v1/sms/send`, {
@@ -35,11 +44,7 @@ async function sendWithTapsa(phone, body) {
         'Content-Type': 'application/json',
         'X-API-Key': tapsaApiKey()
       },
-      body: JSON.stringify({
-        phoneNumbers: [normalizePhone(phone).slice(1)],
-        message: String(body),
-        senderId
-      })
+      body: JSON.stringify(payload)
     });
 
     const result = await response.json().catch(() => ({}));
@@ -53,8 +58,8 @@ async function sendWithTapsa(phone, body) {
     const recipient = result.recipients?.find(item => item.status === 'Success') || result.recipients?.[0];
     return {
       messageId: recipient?.messageId || result.data?.messageId,
-      to: recipient?.number || normalizePhone(phone),
-      senderId: result.senderId || senderId,
+      to: recipient?.number || normalizedPhone,
+      senderId: result.senderId || senderId || 'TAPSA',
       remainingBalance: result.remainingBalance
     };
   } catch (cause) {
