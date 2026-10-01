@@ -7,6 +7,7 @@ const userSchema = new mongoose.Schema({
   resetTokenHash: { type: String, select: false },
   resetTokenExpiresAt: Date,
   role: { type: String, enum: ['user', 'admin'], default: 'user' },
+  active: { type: Boolean, default: true },
   createdAt: { type: Date, default: Date.now }
 });
 

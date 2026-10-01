@@ -16,6 +16,27 @@ function canonicalPhone(value) {
   return digits.startsWith('0') ? `255${digits.slice(1)}` : digits;
 }
 
+function validCustomerPhone(value) {
+  const digits = String(value || '').replace(/\D/g, '');
+  return /^255\d{9}$/.test(digits) || /^0\d{9}$/.test(digits);
+}
+
+function recordSnapshot(record) {
+  return {
+    customerName: record.customerName,
+    phone: record.phone,
+    prevReading: record.prevReading,
+    currReading: record.currReading,
+    units: record.units,
+    pricePerUnit: record.pricePerUnit,
+    currentBill: record.currentBill,
+    previousDebt: record.previousDebt,
+    total: record.total,
+    status: record.status,
+    date: record.date
+  };
+}
+
 function phoneQuery(value) {
   const canonical = canonicalPhone(value);
   const local = canonical.startsWith('255') ? `0${canonical.slice(3)}` : canonical;
@@ -76,7 +97,7 @@ router.get('/customers', async (req, res) => {
   }
 });
 
-router.post('/send-csv', async (req, res) => {
+router.post('/send-csv', adminMiddleware, async (req, res) => {
   try {
     const { phone, recordIds } = req.body;
     if (!phone || !String(phone).trim()) {
@@ -113,6 +134,9 @@ router.post('/', adminMiddleware, async (req, res) => {
     if (!resolvedName || !resolvedPhone || prevReading == null || currReading == null || pricePerUnit == null || !date) {
       return res.status(400).json({ message: 'Jaza maeneo yote' });
     }
+    if (String(resolvedName).trim().length < 2 || String(resolvedName).trim().length > 100 || !validCustomerPhone(resolvedPhone)) {
+      return res.status(400).json({ message: 'Jina au namba ya mteja si sahihi' });
+    }
     const customerRecords = await Record.find(phoneQuery(resolvedPhone))
       .select('date previousDebt currentBill total payments')
       .sort({ date: 1, createdAt: 1 })
@@ -128,7 +152,7 @@ router.post('/', adminMiddleware, async (req, res) => {
     const submittedDebt = arrears;
 
     const units = Number(currReading) - Number(prevReading);
-    if (![prevReading, currReading, pricePerUnit, submittedDebt].every(value => Number.isFinite(Number(value))) || Number(pricePerUnit) < 0 || Number(submittedDebt) < 0) {
+    if (![prevReading, currReading, pricePerUnit, submittedDebt].every(value => Number.isFinite(Number(value))) || Number(prevReading) < 0 || Number(currReading) < 0 || Number(pricePerUnit) < 0 || Number(submittedDebt) < 0) {
       return res.status(400).json({ message: 'Weka readings na bei sahihi' });
     }
     if (units < 0) return res.status(400).json({ message: 'Usomaji wa sasa ni lazima uwe juu ya wa nyuma' });
@@ -136,6 +160,7 @@ router.post('/', adminMiddleware, async (req, res) => {
 
     const currentBill = units * Number(pricePerUnit);
     const total = currentBill + submittedDebt;
+    if (!Number.isFinite(currentBill) || !Number.isFinite(total)) return res.status(400).json({ message: 'Jumla ya bili imezidi kiwango kinachoruhusiwa' });
     const record = new Record({
       invoiceNumber: createInvoiceNumber(),
       customerName: resolvedName,
@@ -147,13 +172,13 @@ router.post('/', adminMiddleware, async (req, res) => {
       previousDebt: submittedDebt,
       currentBill,
       total,
-      status: 'Haijalipwa',
+      status: total === 0 ? 'Imelipwa' : 'Haijalipwa',
       date: new Date(date),
       createdBy: req.user.userId
     });
 
     await record.save();
-    audit(req, 'record_created', record._id, { total: record.total });
+    audit(req, 'record_created', record._id, { before: null, after: recordSnapshot(record) });
     res.status(201).json(record);
   } catch (error) {
     console.error('Record create failed:', error.message);
@@ -192,35 +217,37 @@ router.get('/', async (req, res) => {
 router.put('/:id', adminMiddleware, async (req, res) => {
   try {
     const { customerName, phone, prevReading, currReading, pricePerUnit, previousDebt = 0, date } = req.body;
+    const record = await Record.findById(req.params.id);
+    if (!record) return res.status(404).json({ message: 'Rekodi haipo' });
+    const before = recordSnapshot(record);
+    if (String(customerName || '').trim().length < 2 || String(customerName || '').trim().length > 100 || !validCustomerPhone(phone)) {
+      return res.status(400).json({ message: 'Jina au namba ya mteja si sahihi' });
+    }
     const units = Number(currReading) - Number(prevReading);
-    if (![prevReading, currReading, pricePerUnit, previousDebt].every(value => Number.isFinite(Number(value))) || Number(pricePerUnit) < 0 || Number(previousDebt) < 0) {
+    if (![prevReading, currReading, pricePerUnit, previousDebt].every(value => Number.isFinite(Number(value))) || Number(prevReading) < 0 || Number(currReading) < 0 || Number(pricePerUnit) < 0 || Number(previousDebt) < 0) {
       return res.status(400).json({ message: 'Weka readings na bei sahihi' });
     }
     if (units < 0) return res.status(400).json({ message: 'Usomaji wa sasa ni lazima uwe juu ya wa nyuma' });
 
     const currentBill = units * Number(pricePerUnit);
     const total = currentBill + Number(previousDebt);
+    if (!Number.isFinite(currentBill) || !Number.isFinite(total)) return res.status(400).json({ message: 'Jumla ya bili imezidi kiwango kinachoruhusiwa' });
     if (Number.isNaN(new Date(date).getTime())) return res.status(400).json({ message: 'Tarehe si sahihi' });
-    const updated = await Record.findByIdAndUpdate(req.params.id, {
-      customerName,
-      phone,
-      prevReading,
-      currReading,
-      units,
-      pricePerUnit,
-      previousDebt: Number(previousDebt),
-      currentBill,
-      total,
-      date: new Date(date),
-      updatedAt: Date.now()
-    }, { new: true, runValidators: true });
-
-    if (!updated) return res.status(404).json({ message: 'Rekodi haipo' });
-    const approvedTotal = updated.payments.filter(payment => payment.status === 'approved').reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
-    updated.status = approvedTotal >= updated.total ? 'Imelipwa' : approvedTotal > 0 ? 'Imelipwa nusu' : 'Haijalipwa';
-    await updated.save();
-    audit(req, 'record_updated', updated._id, { total: updated.total });
-    res.json(updated);
+    record.customerName = String(customerName).trim();
+    record.phone = String(phone).trim();
+    record.prevReading = Number(prevReading);
+    record.currReading = Number(currReading);
+    record.units = units;
+    record.pricePerUnit = Number(pricePerUnit);
+    record.previousDebt = Number(previousDebt);
+    record.currentBill = currentBill;
+    record.total = total;
+    record.date = new Date(date);
+    const approvedTotal = record.payments.filter(payment => payment.status === 'approved').reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+    record.status = approvedTotal >= record.total ? 'Imelipwa' : approvedTotal > 0 ? 'Imelipwa nusu' : 'Haijalipwa';
+    await record.save();
+    audit(req, 'record_updated', record._id, { before, after: recordSnapshot(record) });
+    res.json(record);
   } catch (error) {
     console.error('Record update failed:', error.message);
     res.status(500).json({ message: 'Hitilafu ya server' });
@@ -278,9 +305,10 @@ router.post('/:id/payments', async (req, res) => {
       method: 'Manual',
       status: 'pending'
     };
+    const before = { status: record.status, payments: record.payments.map(item => ({ amount: item.amount, status: item.status, reference: item.reference })) };
     record.payments.push(payment);
     await record.save();
-    audit(req, 'payment_created', record._id, { amount: paymentAmount, reference });
+    audit(req, 'payment_created', record._id, { before, after: { status: record.status, payments: record.payments.map(item => ({ amount: item.amount, status: item.status, reference: item.reference })) } });
     res.status(201).json({ message: 'Malipo yamewasilishwa. Yanasubiri idhini ya admin.', record });
   } catch (error) {
     console.error('Payment create failed:', error.message);
@@ -292,7 +320,7 @@ router.delete('/:id', adminMiddleware, async (req, res) => {
   try {
     const deleted = await Record.findByIdAndDelete(req.params.id);
     if (!deleted) return res.status(404).json({ message: 'Rekodi haipo' });
-    audit(req, 'record_deleted', deleted._id, { total: deleted.total });
+    audit(req, 'record_deleted', deleted._id, { before: recordSnapshot(deleted), after: null });
     res.json({ message: 'Rekodi imefutwa' });
   } catch (error) {
     console.error('Record delete failed:', error.message);

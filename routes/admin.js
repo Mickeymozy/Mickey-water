@@ -46,7 +46,7 @@ function phoneQuery(value) {
 
 router.get('/users', async (req, res) => {
   try {
-    const users = await User.find().select('name email role createdAt').sort({ createdAt: -1 }).lean();
+    const users = await User.find().select('name email role active createdAt').sort({ createdAt: -1 }).lean();
     res.json(users);
   } catch (error) {
     res.status(500).json({ message: 'Imeshindikana kupata watumiaji' });
@@ -62,9 +62,9 @@ router.post('/users', async (req, res) => {
       return res.status(400).json({ message: 'Weka jina, email sahihi na nywila yenye angalau herufi 8' });
     }
     if (await User.exists({ email })) return res.status(409).json({ message: 'Email tayari imetumika' });
-    const user = await User.create({ name, email, password: await bcrypt.hash(password, 12), role: 'user' });
-    audit(req, 'user_created', undefined, { email: user.email });
-    res.status(201).json({ _id: user._id, name: user.name, email: user.email, role: user.role, createdAt: user.createdAt });
+    const user = await User.create({ name, email, password: await bcrypt.hash(password, 12), role: 'user', active: true });
+    audit(req, 'user_created', undefined, { before: null, after: { name: user.name, email: user.email, role: user.role, active: user.active } });
+    res.status(201).json({ _id: user._id, name: user.name, email: user.email, role: user.role, active: user.active, createdAt: user.createdAt });
   } catch (error) {
     res.status(500).json({ message: 'Imeshindikana kuongeza mtumiaji' });
   }
@@ -81,14 +81,17 @@ router.patch('/users/:id', async (req, res) => {
     if (name.length < 2 || name.length > 100 || !/^\S+@\S+\.\S+$/.test(email)) return res.status(400).json({ message: 'Jina au email si sahihi' });
     if (await User.exists({ email, _id: { $ne: user._id } })) return res.status(409).json({ message: 'Email tayari imetumika' });
     if (password && password.length < 8) return res.status(400).json({ message: 'Nywila iwe na angalau herufi 8' });
+    const before = { name: user.name, email: user.email, role: user.role, active: user.active !== false };
     user.name = name;
     user.email = email;
     user.role = 'user';
+    if (typeof req.body.active === 'boolean') user.active = req.body.active;
     if (password) user.password = await bcrypt.hash(password, 12);
     await user.save();
-    if (password || req.body.email) await RefreshToken.deleteMany({ userId: user._id });
-    audit(req, 'user_updated', undefined, { email: user.email });
-    res.json({ _id: user._id, name: user.name, email: user.email, role: user.role, createdAt: user.createdAt });
+    if (password || req.body.email || user.active === false || before.active !== user.active) await RefreshToken.deleteMany({ userId: user._id });
+    const after = { name: user.name, email: user.email, role: user.role, active: user.active };
+    audit(req, user.active ? 'user_updated' : 'user_deactivated', undefined, { before, after });
+    res.json({ _id: user._id, name: user.name, email: user.email, role: user.role, active: user.active, createdAt: user.createdAt });
   } catch (error) {
     res.status(500).json({ message: 'Imeshindikana kuhariri mtumiaji' });
   }
@@ -102,7 +105,7 @@ router.delete('/users/:id', async (req, res) => {
     await Record.updateMany({ createdBy: user._id }, { createdBy: req.user.userId });
     await RefreshToken.deleteMany({ userId: user._id });
     await User.deleteOne({ _id: user._id });
-    audit(req, 'user_deleted', undefined, { email: user.email });
+    audit(req, 'user_deleted', undefined, { before: { name: user.name, email: user.email, role: user.role, active: user.active !== false }, after: null });
     res.json({ message: 'Mtumiaji amefutwa; rekodi zake zimehifadhiwa' });
   } catch (error) {
     res.status(500).json({ message: 'Imeshindikana kufuta mtumiaji' });
@@ -128,7 +131,7 @@ router.post('/customers', async (req, res) => {
     }
     if (await Customer.exists({ phone })) return res.status(409).json({ message: 'Namba hii tayari imesajiliwa' });
     const customer = await Customer.create({ name, phone, openingBalance, createdBy: req.user.userId });
-    audit(req, 'customer_created', undefined, { customerId: String(customer._id), phone });
+    audit(req, 'customer_created', undefined, { customerId: String(customer._id), before: null, after: { name: customer.name, phone: customer.phone, openingBalance: customer.openingBalance, active: customer.active } });
     res.status(201).json(customer);
   } catch (error) {
     res.status(500).json({ message: 'Imeshindikana kuongeza mteja' });
@@ -150,6 +153,7 @@ router.patch('/customers/:id', async (req, res) => {
       const hasBills = await Record.exists(phoneQuery(customer.phone));
       if (hasBills) return res.status(409).json({ message: 'Salio la mwanzo haliwezi kubadilishwa baada ya kutengeneza bili' });
     }
+    const before = { name: customer.name, phone: customer.phone, openingBalance: customer.openingBalance, active: customer.active !== false };
     const previousPhone = customer.phone;
     customer.name = name;
     customer.phone = phone;
@@ -158,7 +162,8 @@ router.patch('/customers/:id', async (req, res) => {
     customer.updatedAt = new Date();
     await customer.save();
     await Record.updateMany(phoneQuery(previousPhone), { customerName: name, phone });
-    audit(req, 'customer_updated', undefined, { customerId: String(customer._id), phone });
+    const after = { name: customer.name, phone: customer.phone, openingBalance: customer.openingBalance, active: customer.active };
+    audit(req, customer.active ? 'customer_updated' : 'customer_deactivated', undefined, { customerId: String(customer._id), before, after });
     res.json(customer);
   } catch (error) {
     res.status(500).json({ message: 'Imeshindikana kuhariri mteja' });
@@ -169,9 +174,10 @@ router.delete('/customers/:id', async (req, res) => {
   try {
     const customer = await Customer.findById(req.params.id);
     if (!customer) return res.status(404).json({ message: 'Mteja hapatikani' });
+    const before = { name: customer.name, phone: customer.phone, openingBalance: customer.openingBalance, active: customer.active !== false };
     customer.active = false;
     await customer.save();
-    audit(req, 'customer_deactivated', undefined, { customerId: String(customer._id), hadBills: Boolean(await Record.exists(phoneQuery(customer.phone))) });
+    audit(req, 'customer_deactivated', undefined, { customerId: String(customer._id), before, after: { ...before, active: false }, hadBills: Boolean(await Record.exists(phoneQuery(customer.phone))) });
     res.json({ message: 'Mteja amezimwa; historia ya bili imehifadhiwa' });
   } catch (error) {
     res.status(500).json({ message: 'Imeshindikana kufuta mteja' });
@@ -206,11 +212,13 @@ router.get('/summary', async (req, res) => {
       User.countDocuments(),
       Record.countDocuments({ 'payments.status': 'pending' })
     ]);
+    const approvedTotal = record => record.payments.filter(payment => payment.status === 'approved').reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
     const approvedPayments = records.flatMap(record => record.payments.filter(payment => payment.status === 'approved'));
     res.json({
       users,
       bills: records.length,
-      unpaidBills: records.filter(record => record.status !== 'Imelipwa').length,
+      unpaidBills: records.filter(record => approvedTotal(record) === 0 && Number(record.total || 0) > 0).length,
+      partialBills: records.filter(record => approvedTotal(record) > 0 && approvedTotal(record) < Number(record.total || 0)).length,
       totalBilled: records.reduce((sum, record) => sum + record.total, 0),
       totalCollected: approvedPayments.reduce((sum, payment) => sum + payment.amount, 0),
       pendingPayments,
@@ -219,6 +227,20 @@ router.get('/summary', async (req, res) => {
   } catch (error) {
     console.error('Admin summary failed:', error.message);
     res.status(500).json({ message: 'Imeshindikana kupata muhtasari' });
+  }
+});
+
+router.get('/audit-logs', async (req, res) => {
+  try {
+    const logs = await AuditLog.find()
+      .populate('userId', 'name email')
+      .populate('recordId', 'invoiceNumber customerName')
+      .sort({ createdAt: -1 })
+      .limit(100)
+      .lean();
+    res.json(logs);
+  } catch (error) {
+    res.status(500).json({ message: 'Imeshindikana kupata audit logs' });
   }
 });
 
@@ -242,6 +264,7 @@ router.patch('/payments/:recordId/:paymentId/approve', async (req, res) => {
     if (!payment) return res.status(404).json({ message: 'Malipo hayapo' });
     if (payment.status !== 'pending') return res.status(409).json({ message: 'Malipo hayawezi kuidhinishwa tena' });
 
+    const before = { recordStatus: record.status, payment: { amount: payment.amount, status: payment.status, reference: payment.reference } };
     payment.status = 'approved';
     payment.approvedAt = new Date();
     payment.approvedBy = req.user.userId;
@@ -251,7 +274,7 @@ router.patch('/payments/:recordId/:paymentId/approve', async (req, res) => {
       .reduce((sum, item) => sum + item.amount, 0);
     record.status = approvedTotal >= record.total ? 'Imelipwa' : approvedTotal > 0 ? 'Imelipwa nusu' : 'Haijalipwa';
     await record.save();
-    audit(req, 'payment_approved', record._id, { amount: payment.amount, receiptNumber: payment.receiptNumber });
+    audit(req, 'payment_approved', record._id, { before, after: { recordStatus: record.status, payment: { amount: payment.amount, status: payment.status, reference: payment.reference, receiptNumber: payment.receiptNumber } } });
     res.json({ message: record.status === 'Imelipwa' ? 'Malipo yamekamilika na risiti imetengenezwa' : 'Malipo ya sehemu yameidhinishwa, deni bado lipo', record });
   } catch (error) {
     console.error('Payment approval failed:', error.message);
@@ -269,10 +292,11 @@ router.patch('/payments/:recordId/:paymentId/reject', async (req, res) => {
     if (!payment) return res.status(404).json({ message: 'Malipo hayapo' });
     if (payment.status !== 'pending') return res.status(409).json({ message: 'Malipo hayawezi kukataliwa tena' });
 
+    const before = { recordStatus: record.status, payment: { amount: payment.amount, status: payment.status, reference: payment.reference } };
     payment.status = 'rejected';
     payment.rejectionReason = reason;
     await record.save();
-    audit(req, 'payment_rejected', record._id, { amount: payment.amount, reason });
+    audit(req, 'payment_rejected', record._id, { before, after: { recordStatus: record.status, payment: { amount: payment.amount, status: payment.status, reference: payment.reference, rejectionReason: reason } } });
     res.json({ message: 'Malipo yamekataliwa', record });
   } catch (error) {
     console.error('Payment rejection failed:', error.message);

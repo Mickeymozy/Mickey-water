@@ -80,8 +80,11 @@ Admin anaingia kwa email maalum `mickidadyhamza@gmail.com` na password. Weka `AD
 
 ## Features
 - User and admin login with JWT authentication
-- Create and save water billing records in MongoDB
-- Admin can edit and delete records
+- Role-based permissions: admin manages staff, customers, and bills; staff can review customer history and submit payments
+- Customer records with monthly billed, arrears, approved payments, remaining balance, and payment status
+- Server-calculated arrears and total due when admins create new bills
+- Admin bill edits and management changes stored with before/after audit snapshots
+- Staff accounts can be deactivated; customer records with billing history are archived to preserve financial records
 - Search and filter records by month/year
 - Monthly and yearly summary totals
 

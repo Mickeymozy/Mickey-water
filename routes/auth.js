@@ -50,6 +50,7 @@ router.post('/login', async (req, res) => {
       user = await User.create({ name: 'Administrator', email: ADMIN_EMAIL, password: await bcrypt.hash(password, 12), role: 'admin' });
     }
     if (!user) return res.status(401).json({ message: 'Taarifa zisizofaa' });
+    if (user.active === false) return res.status(403).json({ message: 'Akaunti hii imezimwa. Wasiliana na admin.' });
     if (emailValue === ADMIN_EMAIL && user.role !== 'admin') {
       return res.status(403).json({ message: 'Akaunti hii bado haijaandaliwa kama admin' });
     }
@@ -75,6 +76,7 @@ router.post('/refresh', async (req, res) => {
     if (!saved) return res.status(401).json({ message: 'Refresh token si sahihi au imekwisha muda' });
     const user = await User.findById(saved.userId);
     if (!user) return res.status(401).json({ message: 'Akaunti haipatikani' });
+    if (user.active === false) return res.status(403).json({ message: 'Akaunti hii imezimwa. Wasiliana na admin.' });
     await RefreshToken.deleteOne({ _id: saved._id });
     res.json({ token: createAccessToken(user), refreshToken: await createRefreshToken(user) });
   } catch (error) {
