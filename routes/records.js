@@ -78,18 +78,37 @@ router.get('/customers', async (req, res) => {
   try {
     const [customers, records] = await Promise.all([
       Customer.find().sort({ name: 1 }).lean(),
-      Record.find().select('customerName phone').sort({ customerName: 1 }).lean()
+      Record.find().select('customerName phone previousDebt date createdBy').sort({ date: 1, createdAt: 1 }).lean()
     ]);
-    const byPhone = new Map();
-    const registeredPhones = new Set();
-    customers.forEach(customer => {
-      const phone = canonicalPhone(customer.phone);
-      registeredPhones.add(phone);
-      byPhone.set(phone, { ...customer, registered: true });
-    });
+    const existingPhones = new Set(customers.map(customer => canonicalPhone(customer.phone)));
+    const legacyCustomers = new Map();
     records.forEach(record => {
       const phone = canonicalPhone(record.phone);
-      if (phone && !registeredPhones.has(phone) && !byPhone.has(phone)) byPhone.set(phone, { _id: '', name: record.customerName, phone: record.phone, openingBalance: 0, registered: false });
+      if (phone && !existingPhones.has(phone) && !legacyCustomers.has(phone)) legacyCustomers.set(phone, record);
+    });
+    for (const [phone, record] of legacyCustomers) {
+      try {
+        const customer = await Customer.create({
+          name: String(record.customerName || 'Mteja').trim(),
+          phone,
+          openingBalance: Math.max(0, Number(record.previousDebt || 0)),
+          createdBy: record.createdBy || req.user.userId
+        });
+        customers.push(customer.toObject());
+      } catch (error) {
+        if (error.code !== 11000) throw error;
+      }
+    }
+    for (const customer of customers) {
+      await Record.updateMany(
+        { $and: [phoneQuery(customer.phone), { $or: [{ customerId: { $exists: false } }, { customerId: null }] }] },
+        { $set: { customerId: customer._id } }
+      );
+    }
+    const byPhone = new Map();
+    customers.forEach(customer => {
+      const phone = canonicalPhone(customer.phone);
+      byPhone.set(phone, { ...customer, registered: true });
     });
     res.json([...byPhone.values()].sort((a, b) => a.name.localeCompare(b.name)));
   } catch (error) {
@@ -164,6 +183,7 @@ router.post('/', adminMiddleware, async (req, res) => {
     const record = new Record({
       invoiceNumber: createInvoiceNumber(),
       customerName: resolvedName,
+      customerId: customer?._id,
       phone: resolvedPhone,
       prevReading,
       currReading,
@@ -216,9 +236,11 @@ router.get('/', async (req, res) => {
 
 router.put('/:id', adminMiddleware, async (req, res) => {
   try {
-    const { customerName, phone, prevReading, currReading, pricePerUnit, previousDebt = 0, date } = req.body;
+    const { customerName, phone, customerId, prevReading, currReading, pricePerUnit, previousDebt = 0, date } = req.body;
     const record = await Record.findById(req.params.id);
     if (!record) return res.status(404).json({ message: 'Rekodi haipo' });
+    const customer = customerId ? await Customer.findById(customerId) : await Customer.findOne(phoneQuery(phone));
+    if (customerId && !customer) return res.status(404).json({ message: 'Mteja hapatikani' });
     const before = recordSnapshot(record);
     if (String(customerName || '').trim().length < 2 || String(customerName || '').trim().length > 100 || !validCustomerPhone(phone)) {
       return res.status(400).json({ message: 'Jina au namba ya mteja si sahihi' });
@@ -234,6 +256,7 @@ router.put('/:id', adminMiddleware, async (req, res) => {
     if (!Number.isFinite(currentBill) || !Number.isFinite(total)) return res.status(400).json({ message: 'Jumla ya bili imezidi kiwango kinachoruhusiwa' });
     if (Number.isNaN(new Date(date).getTime())) return res.status(400).json({ message: 'Tarehe si sahihi' });
     record.customerName = String(customerName).trim();
+    record.customerId = customer?._id;
     record.phone = String(phone).trim();
     record.prevReading = Number(prevReading);
     record.currReading = Number(currReading);

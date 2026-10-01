@@ -16,6 +16,7 @@ const paymentSchema = new mongoose.Schema({
 const recordSchema = new mongoose.Schema({
   invoiceNumber: { type: String, unique: true, sparse: true, trim: true },
   customerName: { type: String, required: true, trim: true },
+  customerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Customer', index: true },
   phone: { type: String, required: true, trim: true },
   prevReading: { type: Number, required: true },
   currReading: { type: Number, required: true },
