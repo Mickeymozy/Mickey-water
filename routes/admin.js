@@ -1,9 +1,12 @@
 const express = require('express');
 const Record = require('../models/Record');
 const User = require('../models/User');
+const Customer = require('../models/Customer');
+const RefreshToken = require('../models/RefreshToken');
 const AuditLog = require('../models/AuditLog');
 const { adminMiddleware } = require('../middleware/auth');
 const { sendSMS } = require('../services/sms');
+const bcrypt = require('bcryptjs');
 
 const router = express.Router();
 router.use(adminMiddleware);
@@ -27,6 +30,153 @@ function recordsCsv(records) {
   ]);
   return [header, ...rows].map(row => row.map(csvValue).join(',')).join('\n');
 }
+
+function normalizePhone(value) {
+  const digits = String(value || '').replace(/\D/g, '');
+  if (digits.startsWith('255')) return digits;
+  if (digits.startsWith('0')) return `255${digits.slice(1)}`;
+  return digits;
+}
+
+function phoneQuery(value) {
+  const canonical = normalizePhone(value);
+  const local = canonical.startsWith('255') ? `0${canonical.slice(3)}` : canonical;
+  return { $or: [canonical, local].map(number => ({ phone: new RegExp(`^\\D*${number.split('').join('\\D*')}\\D*$`) })) };
+}
+
+router.get('/users', async (req, res) => {
+  try {
+    const users = await User.find().select('name email role createdAt').sort({ createdAt: -1 }).lean();
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ message: 'Imeshindikana kupata watumiaji' });
+  }
+});
+
+router.post('/users', async (req, res) => {
+  try {
+    const name = String(req.body.name || '').trim();
+    const email = String(req.body.email || '').trim().toLowerCase();
+    const password = String(req.body.password || '');
+    if (name.length < 2 || name.length > 100 || !/^\S+@\S+\.\S+$/.test(email) || password.length < 8) {
+      return res.status(400).json({ message: 'Weka jina, email sahihi na nywila yenye angalau herufi 8' });
+    }
+    if (await User.exists({ email })) return res.status(409).json({ message: 'Email tayari imetumika' });
+    const user = await User.create({ name, email, password: await bcrypt.hash(password, 12), role: 'user' });
+    audit(req, 'user_created', undefined, { email: user.email });
+    res.status(201).json({ _id: user._id, name: user.name, email: user.email, role: user.role, createdAt: user.createdAt });
+  } catch (error) {
+    res.status(500).json({ message: 'Imeshindikana kuongeza mtumiaji' });
+  }
+});
+
+router.patch('/users/:id', async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: 'Mtumiaji hapatikani' });
+    if (user.email === 'mickidadyhamza@gmail.com') return res.status(403).json({ message: 'Akaunti kuu ya admin haiwezi kuhaririwa hapa' });
+    const name = String(req.body.name ?? user.name).trim();
+    const email = String(req.body.email ?? user.email).trim().toLowerCase();
+    const password = String(req.body.password || '');
+    if (name.length < 2 || name.length > 100 || !/^\S+@\S+\.\S+$/.test(email)) return res.status(400).json({ message: 'Jina au email si sahihi' });
+    if (await User.exists({ email, _id: { $ne: user._id } })) return res.status(409).json({ message: 'Email tayari imetumika' });
+    if (password && password.length < 8) return res.status(400).json({ message: 'Nywila iwe na angalau herufi 8' });
+    user.name = name;
+    user.email = email;
+    user.role = 'user';
+    if (password) user.password = await bcrypt.hash(password, 12);
+    await user.save();
+    if (password || req.body.email) await RefreshToken.deleteMany({ userId: user._id });
+    audit(req, 'user_updated', undefined, { email: user.email });
+    res.json({ _id: user._id, name: user.name, email: user.email, role: user.role, createdAt: user.createdAt });
+  } catch (error) {
+    res.status(500).json({ message: 'Imeshindikana kuhariri mtumiaji' });
+  }
+});
+
+router.delete('/users/:id', async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: 'Mtumiaji hapatikani' });
+    if (user.email === 'mickidadyhamza@gmail.com' || String(user._id) === String(req.user.userId)) return res.status(403).json({ message: 'Akaunti hii haiwezi kufutwa' });
+    await Record.updateMany({ createdBy: user._id }, { createdBy: req.user.userId });
+    await RefreshToken.deleteMany({ userId: user._id });
+    await User.deleteOne({ _id: user._id });
+    audit(req, 'user_deleted', undefined, { email: user.email });
+    res.json({ message: 'Mtumiaji amefutwa; rekodi zake zimehifadhiwa' });
+  } catch (error) {
+    res.status(500).json({ message: 'Imeshindikana kufuta mtumiaji' });
+  }
+});
+
+router.get('/customers', async (req, res) => {
+  try {
+    const customers = await Customer.find().sort({ name: 1 }).lean();
+    res.json(customers);
+  } catch (error) {
+    res.status(500).json({ message: 'Imeshindikana kupata wateja' });
+  }
+});
+
+router.post('/customers', async (req, res) => {
+  try {
+    const name = String(req.body.name || '').trim();
+    const phone = normalizePhone(req.body.phone);
+    const openingBalance = Number(req.body.openingBalance || 0);
+    if (name.length < 2 || name.length > 100 || !/^255\d{9}$/.test(phone) || !Number.isFinite(openingBalance) || openingBalance < 0) {
+      return res.status(400).json({ message: 'Weka jina, namba ya Tanzania na salio la mwanzo sahihi' });
+    }
+    if (await Customer.exists({ phone })) return res.status(409).json({ message: 'Namba hii tayari imesajiliwa' });
+    const customer = await Customer.create({ name, phone, openingBalance, createdBy: req.user.userId });
+    audit(req, 'customer_created', undefined, { customerId: String(customer._id), phone });
+    res.status(201).json(customer);
+  } catch (error) {
+    res.status(500).json({ message: 'Imeshindikana kuongeza mteja' });
+  }
+});
+
+router.patch('/customers/:id', async (req, res) => {
+  try {
+    const customer = await Customer.findById(req.params.id);
+    if (!customer) return res.status(404).json({ message: 'Mteja hapatikani' });
+    const name = String(req.body.name ?? customer.name).trim();
+    const phone = normalizePhone(req.body.phone ?? customer.phone);
+    const openingBalance = Number(req.body.openingBalance ?? customer.openingBalance ?? 0);
+    if (name.length < 2 || name.length > 100 || !/^255\d{9}$/.test(phone) || !Number.isFinite(openingBalance) || openingBalance < 0) {
+      return res.status(400).json({ message: 'Taarifa za mteja si sahihi' });
+    }
+    if (await Customer.exists({ phone, _id: { $ne: customer._id } })) return res.status(409).json({ message: 'Namba hii tayari imesajiliwa' });
+    if (Number(openingBalance) !== Number(customer.openingBalance || 0)) {
+      const hasBills = await Record.exists(phoneQuery(customer.phone));
+      if (hasBills) return res.status(409).json({ message: 'Salio la mwanzo haliwezi kubadilishwa baada ya kutengeneza bili' });
+    }
+    const previousPhone = customer.phone;
+    customer.name = name;
+    customer.phone = phone;
+    customer.openingBalance = openingBalance;
+    if (typeof req.body.active === 'boolean') customer.active = req.body.active;
+    customer.updatedAt = new Date();
+    await customer.save();
+    await Record.updateMany(phoneQuery(previousPhone), { customerName: name, phone });
+    audit(req, 'customer_updated', undefined, { customerId: String(customer._id), phone });
+    res.json(customer);
+  } catch (error) {
+    res.status(500).json({ message: 'Imeshindikana kuhariri mteja' });
+  }
+});
+
+router.delete('/customers/:id', async (req, res) => {
+  try {
+    const customer = await Customer.findById(req.params.id);
+    if (!customer) return res.status(404).json({ message: 'Mteja hapatikani' });
+    customer.active = false;
+    await customer.save();
+    audit(req, 'customer_deactivated', undefined, { customerId: String(customer._id), hadBills: Boolean(await Record.exists(phoneQuery(customer.phone))) });
+    res.json({ message: 'Mteja amezimwa; historia ya bili imehifadhiwa' });
+  } catch (error) {
+    res.status(500).json({ message: 'Imeshindikana kufuta mteja' });
+  }
+});
 
 router.post('/send-csv', async (req, res) => {
   try {

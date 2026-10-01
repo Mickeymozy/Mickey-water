@@ -3,7 +3,6 @@ const express = require('express');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const bcrypt = require('bcryptjs');
-const crypto = require('crypto');
 const dotenv = require('dotenv');
 dotenv.config();
 const { connectDB, databaseStatus } = require('./config/db');
@@ -32,13 +31,14 @@ async function ensureAdmin() {
   const existing = await User.findOne({ email });
   if (existing) {
     if (existing.role !== 'admin') {
-      existing.role = 'admin';
-      await existing.save();
+      throw new Error('Email ya admin ipo kwenye akaunti isiyo admin. Rekebisha akaunti kwa mkono kabla ya kuanza server.');
     }
     return;
   }
-  const internalPassword = crypto.randomBytes(32).toString('hex');
-  await User.create({ name: 'Administrator', email, password: await bcrypt.hash(internalPassword, 12), role: 'admin' });
+  if (!process.env.ADMIN_PASSWORD || process.env.ADMIN_PASSWORD.length < 12) {
+    throw new Error('Weka ADMIN_PASSWORD yenye angalau herufi 12 kabla ya kuunda admin wa kwanza.');
+  }
+  await User.create({ name: 'Administrator', email, password: await bcrypt.hash(process.env.ADMIN_PASSWORD, 12), role: 'admin' });
   console.log(`Admin account imeandaliwa: ${email}`);
 }
 

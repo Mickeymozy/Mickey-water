@@ -14,19 +14,21 @@ Simple water billing web app with MongoDB, user/admin login, and admin editing.
    PORT=3000
    MONGODB_URI=mongodb://127.0.0.1:27017/mickey_water
    JWT_SECRET=your_secret_key_here
+   ADMIN_PASSWORD=use_a_unique_password_at_least_12_characters
    SMTP_HOST=smtp.example.com
    SMTP_PORT=587
    SMTP_SECURE=false
    SMTP_USER=your_email@example.com
    SMTP_PASS=your_smtp_password
    SMTP_FROM=your_email@example.com
-   TAPSA_API_KEY=your_tapsa_api_key
+   TAPSA_API_KEY=your_smstapsa_api_key
+   TAPSA_BASE_URL=https://api.smstapsa.my.id
    TAPSA_SENDER_ID=TAPSA
    CLIENT_ORIGIN=http://localhost:3000
    ```
 3. Start MongoDB locally or use MongoDB Atlas.
 
-SMS za moja kwa moja zinatumia TAPSA. Weka API key halisi, si maandishi `your_tapsa_api_key`, kwenye environment ya server. `TAPSA_API_KEY` inahitajika; `TAPSA_SENDER_ID` ni optional kwa kuwa TAPSA hutumia `TAPSA` kwa default.
+SMS za moja kwa moja zinatumia SMSTAPSA. Weka API key halisi, si maandishi `your_smstapsa_api_key`, kwenye environment ya server. `TAPSA_API_KEY` inahitajika; `TAPSA_BASE_URL` ina default `https://api.smstapsa.my.id`; `TAPSA_SENDER_ID` ni optional na default ni `TAPSA`.
 
 Password reset email inahitaji SMTP settings zilizo hapo juu. Backup ya MongoDB inaendeshwa kwa `npm run backup` baada ya kusakinisha MongoDB Database Tools (`mongodump`). Backup files zinawekwa kwenye `backups/`, ambayo haifuatiliwi na Git.
 4. Run the app:
@@ -47,6 +49,8 @@ Password reset email inahitaji SMTP settings zilizo hapo juu. Backup ya MongoDB 
 4. Set these environment variables in Render:
    - `MONGODB_URI`
    - `JWT_SECRET`
+   - `ADMIN_PASSWORD` (at least 12 characters)
+   - `TAPSA_API_KEY` (if SMS is enabled)
    - `NODE_ENV=production`
    - `CLIENT_ORIGIN` (optional; comma-separated allowed frontend origins)
 5. Deploy and confirm the service starts successfully.
@@ -58,6 +62,7 @@ Password reset email inahitaji SMTP settings zilizo hapo juu. Backup ya MongoDB 
 4. Configure environment variables in Vercel:
    - `MONGODB_URI`
    - `JWT_SECRET`
+   - `ADMIN_PASSWORD` (at least 12 characters; used to bootstrap/recover the admin account)
    - `NODE_ENV=production`
 
    Note: Use the exact variable names above. If you set `mongodb_url` instead of `MONGODB_URI`, the app will not find the value unless your code has fallback support.
@@ -67,7 +72,7 @@ Password reset email inahitaji SMTP settings zilizo hapo juu. Backup ya MongoDB 
    ```
 
 ## Admin
-Admin anaingia kwa kutumia email maalum `mickidadyhamza@gmail.com` pekee. Admin account huandaliwa na server bila kuhitaji `ADMIN_PASSWORD`; users wa kawaida bado hutumia password zao.
+Admin anaingia kwa email maalum `mickidadyhamza@gmail.com` na password. Weka `ADMIN_PASSWORD` yenye angalau herufi 12 ili bootstrap/recovery ya admin ifanye kazi. Staff huundwa na admin kupitia ukurasa wa menejimenti; public signup imefungwa. Admin pekee anaweza kusimamia staff/customers na kuunda, kuhariri, au kufuta bili.
 
 ## Pages
 - `/` — login page

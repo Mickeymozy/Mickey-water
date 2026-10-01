@@ -1,13 +1,25 @@
 const express = require('express');
 const Record = require('../models/Record');
+const Customer = require('../models/Customer');
 const AuditLog = require('../models/AuditLog');
-const { authMiddleware } = require('../middleware/auth');
+const { authMiddleware, adminMiddleware } = require('../middleware/auth');
 const { sendSMS } = require('../services/sms');
 
 const router = express.Router();
 
 function createInvoiceNumber() {
   return `MW-${new Date().getFullYear()}-${Date.now().toString(36).toUpperCase()}`;
+}
+
+function canonicalPhone(value) {
+  const digits = String(value || '').replace(/\D/g, '');
+  return digits.startsWith('0') ? `255${digits.slice(1)}` : digits;
+}
+
+function phoneQuery(value) {
+  const canonical = canonicalPhone(value);
+  const local = canonical.startsWith('255') ? `0${canonical.slice(3)}` : canonical;
+  return { $or: [canonical, local].map(number => ({ phone: new RegExp(`^\\D*${number.split('').join('\\D*')}\\D*$`) })) };
 }
 
 function audit(req, action, recordId, metadata = {}) {
@@ -41,6 +53,29 @@ function recordsCsv(records) {
 
 router.use(authMiddleware);
 
+router.get('/customers', async (req, res) => {
+  try {
+    const [customers, records] = await Promise.all([
+      Customer.find().sort({ name: 1 }).lean(),
+      Record.find().select('customerName phone').sort({ customerName: 1 }).lean()
+    ]);
+    const byPhone = new Map();
+    const registeredPhones = new Set();
+    customers.forEach(customer => {
+      const phone = canonicalPhone(customer.phone);
+      registeredPhones.add(phone);
+      byPhone.set(phone, { ...customer, registered: true });
+    });
+    records.forEach(record => {
+      const phone = canonicalPhone(record.phone);
+      if (phone && !registeredPhones.has(phone) && !byPhone.has(phone)) byPhone.set(phone, { _id: '', name: record.customerName, phone: record.phone, openingBalance: 0, registered: false });
+    });
+    res.json([...byPhone.values()].sort((a, b) => a.name.localeCompare(b.name)));
+  } catch (error) {
+    res.status(500).json({ message: 'Imeshindikana kupata wateja' });
+  }
+});
+
 router.post('/send-csv', async (req, res) => {
   try {
     const { phone, recordIds } = req.body;
@@ -48,7 +83,7 @@ router.post('/send-csv', async (req, res) => {
       return res.status(400).json({ message: 'Weka namba ya simu ya kutuma CSV' });
     }
 
-    const query = { createdBy: req.user.userId };
+    const query = {};
     if (Array.isArray(recordIds)) query._id = { $in: recordIds };
     const records = await Record.find(query)
       .select('invoiceNumber customerName phone units previousDebt total status date')
@@ -66,31 +101,50 @@ router.post('/send-csv', async (req, res) => {
   }
 });
 
-router.post('/', async (req, res) => {
+router.post('/', adminMiddleware, async (req, res) => {
   try {
-    const { customerName, phone, prevReading, currReading, pricePerUnit, previousDebt = 0, date } = req.body;
-    if (!customerName || !phone || prevReading == null || currReading == null || pricePerUnit == null || !date) {
+    const { customerName, phone, customerId, prevReading, currReading, pricePerUnit, previousDebt, date } = req.body;
+    let customer;
+    if (customerId) customer = await Customer.findById(customerId);
+    if (customerId && !customer) return res.status(404).json({ message: 'Mteja hapatikani' });
+    if (customer?.active === false) return res.status(409).json({ message: 'Mteja huyu amezimwa' });
+    const resolvedName = customer?.name || customerName;
+    const resolvedPhone = customer?.phone || phone;
+    if (!resolvedName || !resolvedPhone || prevReading == null || currReading == null || pricePerUnit == null || !date) {
       return res.status(400).json({ message: 'Jaza maeneo yote' });
     }
+    const customerRecords = await Record.find(phoneQuery(resolvedPhone))
+      .select('date previousDebt currentBill total payments')
+      .sort({ date: 1, createdAt: 1 })
+      .lean();
+    const firstRecord = customerRecords[0];
+    const approvedPayments = customerRecords.flatMap(record => record.payments || [])
+      .filter(payment => payment.status === 'approved')
+      .reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+    const accruedBills = customerRecords.reduce((sum, record) => sum + Number(record.currentBill || Math.max(0, Number(record.total || 0) - Number(record.previousDebt || 0))), 0);
+    const arrears = customerRecords.length
+      ? Math.max(0, Number(firstRecord?.previousDebt || 0) + accruedBills - approvedPayments)
+      : Number(customer?.openingBalance || 0);
+    const submittedDebt = arrears;
 
     const units = Number(currReading) - Number(prevReading);
-    if (![prevReading, currReading, pricePerUnit, previousDebt].every(value => Number.isFinite(Number(value))) || Number(pricePerUnit) < 0 || Number(previousDebt) < 0) {
+    if (![prevReading, currReading, pricePerUnit, submittedDebt].every(value => Number.isFinite(Number(value))) || Number(pricePerUnit) < 0 || Number(submittedDebt) < 0) {
       return res.status(400).json({ message: 'Weka readings na bei sahihi' });
     }
     if (units < 0) return res.status(400).json({ message: 'Usomaji wa sasa ni lazima uwe juu ya wa nyuma' });
     if (Number.isNaN(new Date(date).getTime())) return res.status(400).json({ message: 'Tarehe si sahihi' });
 
     const currentBill = units * Number(pricePerUnit);
-    const total = currentBill + Number(previousDebt);
+    const total = currentBill + submittedDebt;
     const record = new Record({
       invoiceNumber: createInvoiceNumber(),
-      customerName,
-      phone,
+      customerName: resolvedName,
+      phone: resolvedPhone,
       prevReading,
       currReading,
       units,
       pricePerUnit,
-      previousDebt: Number(previousDebt),
+      previousDebt: submittedDebt,
       currentBill,
       total,
       status: 'Haijalipwa',
@@ -110,7 +164,7 @@ router.post('/', async (req, res) => {
 router.get('/', async (req, res) => {
   try {
     const { search, month, year } = req.query;
-    const query = { createdBy: req.user.userId };
+    const query = {};
 
     if (search) {
       query.$or = [
@@ -135,7 +189,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', adminMiddleware, async (req, res) => {
   try {
     const { customerName, phone, prevReading, currReading, pricePerUnit, previousDebt = 0, date } = req.body;
     const units = Number(currReading) - Number(prevReading);
@@ -147,7 +201,7 @@ router.put('/:id', async (req, res) => {
     const currentBill = units * Number(pricePerUnit);
     const total = currentBill + Number(previousDebt);
     if (Number.isNaN(new Date(date).getTime())) return res.status(400).json({ message: 'Tarehe si sahihi' });
-    const updated = await Record.findOneAndUpdate({ _id: req.params.id, createdBy: req.user.userId }, {
+    const updated = await Record.findByIdAndUpdate(req.params.id, {
       customerName,
       phone,
       prevReading,
@@ -162,6 +216,9 @@ router.put('/:id', async (req, res) => {
     }, { new: true, runValidators: true });
 
     if (!updated) return res.status(404).json({ message: 'Rekodi haipo' });
+    const approvedTotal = updated.payments.filter(payment => payment.status === 'approved').reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+    updated.status = approvedTotal >= updated.total ? 'Imelipwa' : approvedTotal > 0 ? 'Imelipwa nusu' : 'Haijalipwa';
+    await updated.save();
     audit(req, 'record_updated', updated._id, { total: updated.total });
     res.json(updated);
   } catch (error) {
@@ -176,7 +233,7 @@ router.post('/:id/messages', async (req, res) => {
     if (!message || !String(message).trim()) {
       return res.status(400).json({ message: 'Weka ujumbe wa SMS' });
     }
-    const record = await Record.findOne({ _id: req.params.id, createdBy: req.user.userId });
+    const record = await Record.findById(req.params.id);
     if (!record) return res.status(404).json({ message: 'Bill haipo' });
     const recipientPhone = phone && String(phone).trim() ? phone : record.phone;
     const result = await sendSMS(recipientPhone, message);
@@ -192,7 +249,7 @@ router.post('/:id/messages', async (req, res) => {
 router.post('/:id/payments', async (req, res) => {
   try {
     const { amount, reference, note } = req.body;
-    const record = await Record.findOne({ _id: req.params.id, createdBy: req.user.userId });
+    const record = await Record.findById(req.params.id);
     if (!record) return res.status(404).json({ message: 'Bill haipo' });
     const paymentAmount = Number(amount);
     if (!Number.isFinite(paymentAmount) || paymentAmount <= 0) {
@@ -231,9 +288,9 @@ router.post('/:id/payments', async (req, res) => {
   }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', adminMiddleware, async (req, res) => {
   try {
-    const deleted = await Record.findOneAndDelete({ _id: req.params.id, createdBy: req.user.userId });
+    const deleted = await Record.findByIdAndDelete(req.params.id);
     if (!deleted) return res.status(404).json({ message: 'Rekodi haipo' });
     audit(req, 'record_deleted', deleted._id, { total: deleted.total });
     res.json({ message: 'Rekodi imefutwa' });

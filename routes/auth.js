@@ -3,7 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Record = require('../models/Record');
-const { authMiddleware } = require('../middleware/auth');
+const { authMiddleware, adminMiddleware } = require('../middleware/auth');
 const AuditLog = require('../models/AuditLog');
 const RefreshToken = require('../models/RefreshToken');
 const crypto = require('crypto');
@@ -15,6 +15,13 @@ const ADMIN_EMAIL = 'mickidadyhamza@gmail.com';
 
 function hashToken(token) {
   return crypto.createHash('sha256').update(token).digest('hex');
+}
+
+function matchesAdminBootstrapPassword(password) {
+  const configured = String(process.env.ADMIN_PASSWORD || '');
+  const supplied = Buffer.from(String(password || ''));
+  const expected = Buffer.from(configured);
+  return configured.length >= 12 && supplied.length === expected.length && crypto.timingSafeEqual(supplied, expected);
 }
 
 function createAccessToken(user) {
@@ -36,21 +43,11 @@ router.post('/login', async (req, res) => {
   try {
     const emailValue = String(req.body.email || '').trim().toLowerCase();
     const password = String(req.body.password || '');
-    if (!emailValue || (emailValue !== ADMIN_EMAIL && !password)) return res.status(400).json({ message: 'Email na password yanahitajika' });
+    if (!emailValue || !password) return res.status(400).json({ message: 'Email na password yanahitajika' });
 
     let user = await User.findOne({ email: emailValue });
-    if (emailValue === ADMIN_EMAIL) {
-      if (!user) {
-        user = await User.create({
-          name: 'Administrator',
-          email: ADMIN_EMAIL,
-          password: await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 12),
-          role: 'admin'
-        });
-      } else if (user.role !== 'admin') {
-        user.role = 'admin';
-        await user.save();
-      }
+    if (!user && emailValue === ADMIN_EMAIL && matchesAdminBootstrapPassword(password)) {
+      user = await User.create({ name: 'Administrator', email: ADMIN_EMAIL, password: await bcrypt.hash(password, 12), role: 'admin' });
     }
     if (!user) return res.status(401).json({ message: 'Taarifa zisizofaa' });
     if (emailValue === ADMIN_EMAIL && user.role !== 'admin') {
@@ -60,10 +57,8 @@ router.post('/login', async (req, res) => {
       return res.status(403).json({ message: 'Admin anaruhusiwa kutumia email maalum pekee' });
     }
 
-    if (emailValue !== ADMIN_EMAIL) {
-      const isMatch = await bcrypt.compare(password, user.password);
-      if (!isMatch) return res.status(401).json({ message: 'Taarifa zisizofaa' });
-    }
+    const isMatch = await bcrypt.compare(password, user.password) || (emailValue === ADMIN_EMAIL && matchesAdminBootstrapPassword(password));
+    if (!isMatch) return res.status(401).json({ message: 'Taarifa zisizofaa' });
 
     const token = createAccessToken(user);
     const refreshToken = await createRefreshToken(user);
@@ -127,7 +122,7 @@ router.post('/reset-password', async (req, res) => {
   }
 });
 
-router.post('/register', async (req, res) => {
+router.post('/register', adminMiddleware, async (req, res) => {
   try {
     const name = String(req.body.name || '').trim();
     const email = String(req.body.email || '').trim().toLowerCase();
@@ -152,16 +147,19 @@ router.post('/register', async (req, res) => {
 
 router.delete('/me', authMiddleware, async (req, res) => {
   try {
+    if (req.user.role === 'admin') return res.status(403).json({ message: 'Akaunti ya admin haiwezi kujifuta yenyewe' });
     const user = await User.findById(req.user.userId);
     if (!user) return res.status(404).json({ message: 'Akaunti haipatikani' });
 
-    await Record.deleteMany({ createdBy: user._id });
+    const admin = await User.findOne({ role: 'admin' }).select('_id');
+    if (!admin) return res.status(409).json({ message: 'Akaunti haiwezi kufutwa kwa sasa bila kupoteza rekodi' });
+    await Record.updateMany({ createdBy: user._id }, { createdBy: admin._id });
     await RefreshToken.deleteMany({ userId: user._id });
     await User.deleteOne({ _id: user._id });
     await AuditLog.create({ userId: user._id, action: 'account_deleted', metadata: { email: user.email } }).catch(error => {
       console.error('Audit log failed (account_deleted):', error.message);
     });
-    res.json({ message: 'Akaunti na records zake zimefutwa kabisa' });
+    res.json({ message: 'Akaunti imefutwa; rekodi zake zimehifadhiwa' });
   } catch (error) {
     res.status(500).json({ message: 'Akaunti haikuweza kufutwa' });
   }
