@@ -29,7 +29,7 @@ async function sendWithTapsa(phone, body) {
   const normalizedPhone = normalizePhone(phone);
   const payload = {
     phoneNumbers: [normalizedPhone.replace(/^\+/, '')],
-    message: String(body).slice(0, 160)
+    message: String(body)
   };
 
   if (senderId) {

@@ -72,6 +72,38 @@ function recordsCsv(records) {
   return [header, ...rows].map(row => row.map(csvValue).join(',')).join('\n');
 }
 
+function smsDate(value) {
+  const date = new Date(value);
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Africa/Dar_es_Salaam',
+    year: 'numeric',
+    month: 'numeric',
+    day: '2-digit'
+  }).formatToParts(date);
+  const part = type => parts.find(item => item.type === type)?.value || '';
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return `${part('day')} ${months[Number(part('month')) - 1]} ${part('year')}`;
+}
+
+function smsMoney(value) {
+  return `TZS ${Number(value || 0).toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
+}
+
+function billSms(record) {
+  return `WATER BILLING SYSTEM\nNdugu ${String(record.customerName).toUpperCase()},\nTarehe: ${smsDate(record.date)}\n\nMaelezo ya Bili:\nUsomaji wa Nyuma: ${record.prevReading} Units\nUsomaji wa Sasa: ${record.currReading} Units\nMatumizi Halisi: ${record.units} Units\nGharama kwa Unit: ${smsMoney(record.pricePerUnit)}\nMwezi uliopita: ${smsMoney(record.previousDebt)}\nJumla ya Bili: ${smsMoney(record.total)}\nHali: ${record.status}\n\nAsante kwa ushirikiano wako.\nMickey Water`;
+}
+
+function receiptSms(record) {
+  const approved = record.payments.filter(payment => payment.status === 'approved')
+    .sort((a, b) => new Date(a.approvedAt || a.submittedAt) - new Date(b.approvedAt || b.submittedAt));
+  const payment = approved[approved.length - 1];
+  if (!payment) return null;
+  const approvedTotal = approved.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  const remaining = Math.max(0, Number(record.total || 0) - approvedTotal);
+  const partial = remaining > 0;
+  return `MICKEY WATER | RISITI YA MALIPO\nNdugu ${String(record.customerName).toUpperCase()},\nNamba ya risiti: ${payment.receiptNumber || `MW-${String(record._id).slice(-8).toUpperCase()}`}\nTarehe ya malipo: ${smsDate(payment.approvedAt || payment.submittedAt)}\nKiasi kilicholipwa: ${smsMoney(payment.amount)}${partial ? `\nDeni lililobaki: ${smsMoney(remaining)}` : ''}\nRejea: ${payment.reference || 'Haijawekwa'}\n${partial ? 'Malipo yamepokelewa kwa sehemu. Deni lililobaki limeonyeshwa hapo juu.' : 'Malipo yamepokelewa. Hii ni risiti yako.'}\nAsante, Mickey Water.`;
+}
+
 router.use(authMiddleware);
 
 router.get('/customers', async (req, res) => {
@@ -279,15 +311,15 @@ router.put('/:id', adminMiddleware, async (req, res) => {
 
 router.post('/:id/messages', async (req, res) => {
   try {
-    const { message, phone } = req.body;
-    if (!message || !String(message).trim()) {
-      return res.status(400).json({ message: 'Weka ujumbe wa SMS' });
-    }
+    const { message, phone, messageType } = req.body;
     const record = await Record.findById(req.params.id);
     if (!record) return res.status(404).json({ message: 'Bill haipo' });
+    const smsBody = messageType === 'bill' ? billSms(record) : messageType === 'receipt' ? receiptSms(record) : String(message || '').trim();
+    if (messageType === 'receipt' && !smsBody) return res.status(409).json({ message: 'Risiti hutumwa baada ya malipo kuidhinishwa' });
+    if (!smsBody) return res.status(400).json({ message: 'Weka ujumbe wa SMS' });
     const recipientPhone = phone && String(phone).trim() ? phone : record.phone;
-    const result = await sendSMS(recipientPhone, message);
-    audit(req, 'sms_sent', record._id, { messageId: result.messageId, to: result.to });
+    const result = await sendSMS(recipientPhone, smsBody);
+    audit(req, 'sms_sent', record._id, { messageId: result.messageId, to: result.to, type: messageType || 'custom' });
     res.json({ message: 'Ujumbe umetumwa', result });
   } catch (error) {
     console.error('SMS send failed:', error.message);
