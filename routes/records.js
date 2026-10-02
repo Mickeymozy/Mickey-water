@@ -339,6 +339,42 @@ router.post('/:id/payments', async (req, res) => {
   }
 });
 
+router.post('/:id/mark-paid', adminMiddleware, async (req, res) => {
+  try {
+    const record = await Record.findById(req.params.id);
+    if (!record) return res.status(404).json({ message: 'Bill haipo' });
+    if (record.payments.some(payment => payment.status === 'pending')) {
+      return res.status(409).json({ message: 'Kuna malipo yanayosubiri idhini. Yaidhinishe au yakatae kwanza.' });
+    }
+    const approvedTotal = record.payments.filter(payment => payment.status === 'approved')
+      .reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+    const remaining = Math.max(0, Number(record.total || 0) - approvedTotal);
+    if (remaining <= 0) return res.status(409).json({ message: 'Bill hii tayari imelipwa kikamilifu' });
+    const before = { status: record.status, total: record.total, approvedTotal };
+    const payment = {
+      amount: remaining,
+      method: 'Manual',
+      reference: String(req.body.reference || '').trim() || `ADMIN-${Date.now()}`,
+      note: String(req.body.note || 'Malipo yamethibitishwa na admin').trim(),
+      status: 'approved',
+      approvedAt: new Date(),
+      approvedBy: req.user.userId,
+      receiptNumber: `MW-${Date.now().toString(36).toUpperCase()}`
+    };
+    record.payments.push(payment);
+    record.status = 'Imelipwa';
+    await record.save();
+    audit(req, 'payment_approved', record._id, {
+      before,
+      after: { status: record.status, total: record.total, approvedTotal: approvedTotal + remaining, payment: { amount: remaining, reference: payment.reference, receiptNumber: payment.receiptNumber } }
+    });
+    res.json({ message: 'Bill imewekwa imelipwa na risiti imetengenezwa', record, payment });
+  } catch (error) {
+    console.error('Mark-paid action failed:', error.message);
+    res.status(500).json({ message: 'Imeshindikana kuweka bill imelipwa' });
+  }
+});
+
 router.delete('/:id', adminMiddleware, async (req, res) => {
   try {
     const deleted = await Record.findByIdAndDelete(req.params.id);
