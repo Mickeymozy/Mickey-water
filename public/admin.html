@@ -78,27 +78,43 @@ const adminSmsModeControl=document.createElement('label');adminSmsModeControl.cl
 (() => {
   const panel = document.createElement('section');
   panel.className = 'panel admin-receipts-panel';
-  panel.innerHTML = '<div class="admin-receipts-head"><div><h2>Risiti zote zilizothibitishwa</h2><p>Preview, chapisha moja, au chapisha risiti zote kwa vipande vya wima.</p></div><button class="button primary" type="button" id="printAllReceipts">Chapisha zote</button></div><div class="admin-receipt-filters"><input id="adminReceiptSearch" type="search" placeholder="Tafuta risiti, invoice au mteja"><input id="adminReceiptMonth" type="month" aria-label="Chuja risiti kwa mwezi"></div><p class="admin-receipt-count" id="adminReceiptCount">0 risiti</p><div class="admin-receipt-scroll"><table class="admin-receipt-table"><thead><tr><th>Risiti</th><th>Mteja / invoice</th><th>Tarehe</th><th>Kiasi</th><th>Vitendo</th></tr></thead><tbody id="adminReceiptRows"><tr><td colspan="5" class="empty">Inapakia risiti...</td></tr></tbody></table></div>';
+  panel.innerHTML = '<div class="admin-receipts-head"><div><h2>Records na risiti</h2><p>Bili zote, malipo na salio; chapisha nakala za wima za kukata.</p></div><button class="button primary" type="button" id="printAllReceipts">Chapisha zote</button></div><div class="admin-receipt-status-tabs" role="group" aria-label="Chuja bili kwa hali"><button type="button" class="button active" data-admin-receipt-status="all">Zote</button><button type="button" class="button" data-admin-receipt-status="unpaid">Haijalipwa</button><button type="button" class="button" data-admin-receipt-status="partial">Imelipwa sehemu</button><button type="button" class="button" data-admin-receipt-status="paid">Imelipwa</button></div><div class="admin-receipt-filters"><input id="adminReceiptSearch" type="search" placeholder="Tafuta risiti, invoice au mteja"><input id="adminReceiptMonth" type="month" aria-label="Chuja risiti kwa mwezi"></div><p class="admin-receipt-count" id="adminReceiptCount">0 bili</p><div class="admin-receipt-scroll"><table class="admin-receipt-table"><thead><tr><th>Namba ya bili / risiti</th><th>Mteja / invoice</th><th>Tarehe</th><th>Jumla / imelipwa</th><th>Salio</th><th>Hali</th><th>Vitendo</th></tr></thead><tbody id="adminReceiptRows"><tr><td colspan="7" class="empty">Inapakia records...</td></tr></tbody></table></div>';
   document.querySelector('.shell').append(panel);
   const style = document.createElement('style');
-  style.textContent = '.admin-receipts-panel{margin:20px 0}.admin-receipts-head{display:flex;align-items:center;justify-content:space-between;gap:14px}.admin-receipts-head h2{margin:0 0 6px;font:normal 1.45rem Georgia,serif}.admin-receipts-head p{margin:0;color:var(--muted);font:.8rem Arial,sans-serif}.admin-receipt-filters{display:grid;grid-template-columns:minmax(220px,1fr) 190px;gap:9px;margin:16px 0 10px}.admin-receipt-filters input{min-width:0;min-height:42px;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--white);color:var(--ink);font:.82rem Arial,sans-serif}.admin-receipt-count{color:var(--muted);font:700 .74rem Arial,sans-serif}.admin-receipt-scroll{max-width:100%;overflow:auto}.admin-receipt-table{width:100%;min-width:660px;border-collapse:collapse;font:.76rem Arial,sans-serif}.admin-receipt-table th,.admin-receipt-table td{padding:11px 9px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}.admin-receipt-table th{color:var(--muted);font-size:.64rem;text-transform:uppercase}.admin-receipt-table td small{display:block;margin-top:3px;color:var(--muted)}.admin-receipt-table td:last-child{display:flex;gap:6px}.admin-receipt-table .button{min-height:36px;padding:7px 10px;font-size:.68rem}html[data-theme=dark] .admin-receipt-filters input{background:#102323;color:#eff7f1;border-color:#355653}@media(max-width:620px){.admin-receipts-head{align-items:flex-start;flex-direction:column}.admin-receipts-head .button{width:100%}.admin-receipt-filters{grid-template-columns:1fr}.admin-receipt-table td:last-child{white-space:normal}}';
+  style.textContent = '.admin-receipts-panel{margin:20px 0}.admin-receipts-head{display:flex;align-items:center;justify-content:space-between;gap:14px}.admin-receipts-head h2{margin:0 0 6px;font:normal 1.45rem Georgia,serif}.admin-receipts-head p{margin:0;color:var(--muted);font:.8rem Arial,sans-serif}.admin-receipt-status-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:15px 0 10px;padding:5px;border:1px solid var(--line);border-radius:8px;background:rgba(255,255,255,.55)}.admin-receipt-status-tabs .button{min-height:36px;padding:8px 12px;border-color:transparent;background:transparent;color:var(--muted);font-size:.7rem}.admin-receipt-status-tabs .button.active{background:var(--teal);color:#fff}.admin-receipt-filters{display:grid;grid-template-columns:minmax(220px,1fr) 190px;gap:9px;margin:14px 0 10px}.admin-receipt-filters input{min-width:0;min-height:42px;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--white);color:var(--ink);font:.82rem Arial,sans-serif}.admin-receipt-count{color:var(--muted);font:700 .74rem Arial,sans-serif}.admin-receipt-scroll{max-width:100%;overflow:auto}.admin-receipt-table{width:100%;min-width:820px;border-collapse:collapse;font:.76rem Arial,sans-serif}.admin-receipt-table th,.admin-receipt-table td{padding:11px 9px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}.admin-receipt-table th{color:var(--muted);font-size:.64rem;text-transform:uppercase}.admin-receipt-table td small{display:block;margin-top:3px;color:var(--muted)}.admin-receipt-table td:last-child{display:flex;gap:6px}.admin-receipt-table .button{min-height:36px;padding:7px 10px;font-size:.68rem}html[data-theme=dark] .admin-receipt-status-tabs{background:#142626;border-color:#355653}html[data-theme=dark] .admin-receipt-filters input{background:#102323;color:#eff7f1;border-color:#355653}@media(max-width:620px){.admin-receipts-head{align-items:flex-start;flex-direction:column}.admin-receipts-head .button{width:100%}.admin-receipt-status-tabs .button{flex:1 1 42%;padding:7px}.admin-receipt-filters{grid-template-columns:1fr}.admin-receipt-table td:last-child{white-space:normal}}';
   document.head.append(style);
 
-  const approvedReceipts = () => billRecords.flatMap(record => (record.payments || [])
-    .filter(payment => payment.status === 'approved')
-    .map(payment => ({ record, payment }))
-  ).sort((left, right) => new Date(right.payment.approvedAt || right.payment.submittedAt) - new Date(left.payment.approvedAt || left.payment.submittedAt));
+  const statusStyle = document.createElement('style');
+  statusStyle.textContent = '.admin-receipt-table .status{display:inline-block;padding:5px 8px;border-radius:999px;font:700 .65rem Arial,sans-serif}.admin-receipt-table .status.paid{background:#e5f3e9;color:#23704a}.admin-receipt-table .status.partial{background:#fff3d4;color:#946b00}.admin-receipt-table .status.unpaid{background:#fff0e9;color:#b64226}html[data-theme=dark] .admin-receipt-table .status.paid{background:#193b2d;color:#a8e0b8}html[data-theme=dark] .admin-receipt-table .status.partial{background:#3d351b;color:#f4d36b}html[data-theme=dark] .admin-receipt-table .status.unpaid{background:#40251f;color:#f3a18a}';
+  document.head.append(statusStyle);
+
+  let selectedReceiptStatus = 'all';
+  const allReceiptRecords = () => [...billRecords].sort((left, right) => new Date(right.date) - new Date(left.date)).map(record => ({ record }));
+  const receiptStatus = record => {
+    const paid = (record.payments || []).filter(payment => payment.status === 'approved').reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+    return paid >= Number(record.total || 0) ? { key: 'paid', label: 'Imelipwa', paid } : paid > 0 ? { key: 'partial', label: 'Imelipwa sehemu', paid } : { key: 'unpaid', label: 'Haijalipwa', paid };
+  };
   const renderReceipts = () => {
     const search = document.getElementById('adminReceiptSearch').value.trim().toLowerCase();
     const month = document.getElementById('adminReceiptMonth').value;
-    const visible = approvedReceipts().filter(({ record, payment }) => {
-      const searchText = `${record.customerName} ${record.phone} ${record.invoiceNumber || ''} ${payment.receiptNumber || ''}`.toLowerCase();
-      const paymentDate = payment.approvedAt || payment.submittedAt || record.date;
-      return searchText.includes(search) && (!month || String(paymentDate).slice(0, 7) === month);
+    const visible = allReceiptRecords().filter(({ record }) => {
+      const searchText = `${record.customerName} ${record.phone} ${record.invoiceNumber || ''} ${record._id}`.toLowerCase();
+      return searchText.includes(search) && (!month || String(record.date).slice(0, 7) === month) && (selectedReceiptStatus === 'all' || receiptStatus(record).key === selectedReceiptStatus);
     });
-    document.getElementById('adminReceiptCount').textContent = `${visible.length} risiti zinaonekana`;
-    document.getElementById('adminReceiptRows').innerHTML = visible.length ? visible.map(({ record, payment }) => `<tr><td>${escapeHtml(payment.receiptNumber || `MW-${String(record._id).slice(-8).toUpperCase()}`)}</td><td>${escapeHtml(record.customerName)}<small>${escapeHtml(record.invoiceNumber || 'Bili ya zamani')}</small></td><td>${escapeHtml(adminSmsDate(payment.approvedAt || payment.submittedAt || record.date))}</td><td>${money(payment.amount)}</td><td><button class="button" type="button" data-preview-admin-receipt="${escapeHtml(record._id)}" data-payment-id="${escapeHtml(payment._id)}">Preview</button><button class="button" type="button" data-print-admin-receipt="${escapeHtml(record._id)}" data-payment-id="${escapeHtml(payment._id)}">Chapisha</button></td></tr>`).join('') : '<tr><td colspan="5" class="empty">Hakuna risiti zilizothibitishwa zinazolingana.</td></tr>';
+    document.getElementById('adminReceiptCount').textContent = `${visible.length} bili zinaonekana`;
+    document.getElementById('adminReceiptRows').innerHTML = visible.length ? visible.map(({ record }) => {
+      const status = receiptStatus(record);
+      const balance = Math.max(0, Number(record.total || 0) - status.paid);
+      return `<tr><td>${escapeHtml(record.invoiceNumber || `MW-${String(record._id).slice(-8).toUpperCase()}`)}</td><td>${escapeHtml(record.customerName)}<small>${escapeHtml(record.phone)}</small></td><td>${escapeHtml(adminSmsDate(record.date))}</td><td>${money(record.total)}<small>Imelipwa: ${money(status.paid)}</small></td><td>${money(balance)}</td><td><span class="status ${status.key}">${status.label}</span></td><td><button class="button" type="button" data-preview-admin-receipt="${escapeHtml(record._id)}">Preview</button><button class="button" type="button" data-print-admin-receipt="${escapeHtml(record._id)}">Chapisha</button></td></tr>`;
+    }).join('') : '<tr><td colspan="7" class="empty">Hakuna bili zinazolingana.</td></tr>';
   };
+  panel.querySelector('.admin-receipt-status-tabs').addEventListener('click', event => {
+    const button = event.target.closest('[data-admin-receipt-status]');
+    if (!button) return;
+    selectedReceiptStatus = button.dataset.adminReceiptStatus;
+    panel.querySelectorAll('[data-admin-receipt-status]').forEach(tab => tab.classList.toggle('active', tab === button));
+    renderReceipts();
+  });
   ['adminReceiptSearch', 'adminReceiptMonth'].forEach(id => document.getElementById(id).addEventListener(id === 'adminReceiptSearch' ? 'input' : 'change', renderReceipts));
   panel.addEventListener('click', event => {
     const previewButton = event.target.closest('[data-preview-admin-receipt]');
@@ -106,12 +122,11 @@ const adminSmsModeControl=document.createElement('label');adminSmsModeControl.cl
     if (!previewButton && !printButton) return;
     const button = previewButton || printButton;
     const record = billRecords.find(item => item._id === button.dataset.previewAdminReceipt || item._id === button.dataset.printAdminReceipt);
-    const payment = record?.payments?.find(item => item._id === button.dataset.paymentId);
-    if (previewButton) window.MickeyReceiptPrint.preview(record, payment);
-    else if (!window.MickeyReceiptPrint.print([{ record, payment }], 'Risiti ya malipo')) managementMessage('Ruhusu dirisha la kuchapisha lifunguke.');
+    if (previewButton) window.MickeyReceiptPrint.preview(record);
+    else if (!window.MickeyReceiptPrint.print([{ record }], 'Taarifa ya bili')) managementMessage('Ruhusu dirisha la kuchapisha lifunguke.');
   });
   document.getElementById('printAllReceipts').addEventListener('click', () => {
-    if (!window.MickeyReceiptPrint.print(approvedReceipts(), 'Risiti zote zilizothibitishwa')) managementMessage('Hakuna risiti za kuchapisha au dirisha limezuiwa.');
+    if (!window.MickeyReceiptPrint.print(allReceiptRecords(), 'Records zote na salio')) managementMessage('Hakuna bili za kuchapisha au dirisha limezuiwa.');
   });
   const previousBillDataLoad = loadAdminBillData;
   loadAdminBillData = async function() { await previousBillDataLoad(); renderReceipts(); };

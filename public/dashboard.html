@@ -404,32 +404,55 @@ const dashboardSmsModeControl=$('smsMode');if(dashboardSmsModeControl){dashboard
 (() => {
   const panel = document.querySelector('.dashboard-receipts-panel');
   if (!panel) return;
+  panel.querySelector('.panel-head h2').textContent = 'Bili na risiti';
+  panel.querySelector('.panel-head p').textContent = 'Angalia hali ya malipo, kiasi kilicholipwa na salio la kila bili.';
+  const statusTabs = document.createElement('div');
+  statusTabs.className = 'receipt-status-tabs';
+  statusTabs.setAttribute('role', 'group');
+  statusTabs.setAttribute('aria-label', 'Chuja bili kwa hali ya malipo');
+  statusTabs.innerHTML = '<button type="button" class="filter active" data-receipt-status="all">Zote</button><button type="button" class="filter" data-receipt-status="unpaid">Haijalipwa</button><button type="button" class="filter" data-receipt-status="partial">Imelipwa sehemu</button><button type="button" class="filter" data-receipt-status="paid">Imelipwa</button>';
+  panel.querySelector('.dashboard-receipt-filters').before(statusTabs);
+  const receiptHeaders = panel.querySelectorAll('thead th');
+  receiptHeaders[0].textContent = 'Namba ya bili / risiti';
+  receiptHeaders[2].textContent = 'Tarehe ya bili';
+  receiptHeaders[3].textContent = 'Jumla / imelipwa';
+  const statusHeader = document.createElement('th');
+  statusHeader.textContent = 'Hali';
+  receiptHeaders[5].before(statusHeader);
+  panel.querySelector('tbody td').colSpan = 7;
   const receiptStyle = document.createElement('style');
-  receiptStyle.textContent = '.dashboard-receipt-filters{display:grid;grid-template-columns:minmax(220px,1fr) 190px;gap:9px;margin:14px 0}.dashboard-receipt-filters input{min-width:0;min-height:42px;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--white);color:var(--ink);font: .82rem Arial,sans-serif}.dashboard-receipt-count{color:var(--muted);font:700 .75rem Arial,sans-serif}.dashboard-receipt-scroll{max-width:100%;overflow:auto}.dashboard-receipt-table{width:100%;min-width:720px;border-collapse:collapse;font:.76rem Arial,sans-serif}.dashboard-receipt-table th,.dashboard-receipt-table td{padding:11px 9px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}.dashboard-receipt-table th{color:var(--muted);font-size:.64rem;text-transform:uppercase}.dashboard-receipt-table td small{display:block;margin-top:3px;color:var(--muted)}.dashboard-receipt-table td:last-child{display:flex;gap:6px}html[data-theme=dark] .dashboard-receipt-filters input{background:#102323;color:#eff7f1;border-color:#355653}@media(max-width:620px){.dashboard-receipt-filters{grid-template-columns:1fr}.dashboard-receipts-panel .panel-head{align-items:flex-start;flex-direction:column}.dashboard-receipt-table td:last-child{white-space:normal}}';
+  receiptStyle.textContent = '.receipt-status-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:15px 0 10px;padding:5px;border:1px solid var(--line);border-radius:8px;background:rgba(255,255,255,.55)}.receipt-status-tabs .filter{min-height:36px;padding:8px 12px;border:0;border-radius:6px;background:transparent;color:var(--muted);font:700 .7rem "Trebuchet MS",Verdana,sans-serif}.receipt-status-tabs .filter.active{background:var(--teal);color:#fff}.dashboard-receipt-filters{display:grid;grid-template-columns:minmax(220px,1fr) 190px;gap:9px;margin:14px 0}.dashboard-receipt-filters input{min-width:0;min-height:42px;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--white);color:var(--ink);font: .82rem Arial,sans-serif}.dashboard-receipt-count{color:var(--muted);font:700 .75rem Arial,sans-serif}.dashboard-receipt-scroll{max-width:100%;overflow:auto}.dashboard-receipt-table{width:100%;min-width:820px;border-collapse:collapse;font:.76rem Arial,sans-serif}.dashboard-receipt-table th,.dashboard-receipt-table td{padding:11px 9px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}.dashboard-receipt-table th{color:var(--muted);font-size:.64rem;text-transform:uppercase}.dashboard-receipt-table td small{display:block;margin-top:3px;color:var(--muted)}.dashboard-receipt-table td:last-child{display:flex;gap:6px}html[data-theme=dark] .receipt-status-tabs{background:#142626;border-color:#355653}html[data-theme=dark] .dashboard-receipt-filters input{background:#102323;color:#eff7f1;border-color:#355653}@media(max-width:620px){.receipt-status-tabs{gap:4px}.receipt-status-tabs .filter{flex:1 1 42%;padding:7px}.dashboard-receipt-filters{grid-template-columns:1fr}.dashboard-receipts-panel .panel-head{align-items:flex-start;flex-direction:column}.dashboard-receipt-table td:last-child{white-space:normal}}';
   document.head.append(receiptStyle);
-  const approvedReceipts = () => state.records.flatMap(record => (record.payments || [])
-    .filter(payment => payment.status === 'approved')
-    .map(payment => ({ record, payment }))
-  ).sort((left, right) => new Date(right.payment.approvedAt || right.payment.submittedAt) - new Date(left.payment.approvedAt || left.payment.submittedAt));
+  let selectedReceiptStatus = 'all';
+  const receiptRecords = () => [...state.records].sort((left, right) => new Date(right.date) - new Date(left.date)).map(record => ({ record }));
   const filteredReceipts = () => {
     const search = document.getElementById('receiptSearch').value.trim().toLowerCase();
     const month = document.getElementById('receiptMonth').value;
-    return approvedReceipts().filter(({ record, payment }) => {
-      const searchText = `${record.customerName} ${record.phone} ${record.invoiceNumber || ''} ${payment.receiptNumber || ''}`.toLowerCase();
-      const paymentDate = payment.approvedAt || payment.submittedAt || record.date;
-      return searchText.includes(search) && (!month || String(paymentDate).slice(0, 7) === month);
+    return receiptRecords().filter(({ record }) => {
+      const searchText = `${record.customerName} ${record.phone} ${record.invoiceNumber || ''}`.toLowerCase();
+      const status = paymentStatus(record).className;
+      return searchText.includes(search) && (!month || String(record.date).slice(0, 7) === month) && (selectedReceiptStatus === 'all' || status === selectedReceiptStatus);
     });
   };
   const renderReceipts = () => {
     const receipts = filteredReceipts();
-    document.getElementById('receiptCount').textContent = `${receipts.length} risiti`;
-    document.getElementById('receiptRows').innerHTML = receipts.length ? receipts.map(({ record, payment }) => {
-      const receiptNumber = payment.receiptNumber || `MW-${String(record._id).slice(-8).toUpperCase()}`;
-      const balance = Math.max(0, Number(record.total || 0) - (record.payments || []).filter(item => item.status === 'approved').reduce((sum, item) => sum + Number(item.amount || 0), 0));
-      const paymentDate = payment.approvedAt || payment.submittedAt || record.date;
-      return `<tr><td>${escapeHtml(receiptNumber)}</td><td>${escapeHtml(record.customerName)}<small>${escapeHtml(record.invoiceNumber || 'Bili ya zamani')}</small></td><td>${escapeHtml(date(paymentDate))}</td><td>${money(payment.amount)}</td><td>${money(balance)}</td><td><button class="action" type="button" data-receipt-preview="${escapeHtml(record._id)}" data-payment-id="${escapeHtml(payment._id)}">Preview</button><button class="action" type="button" data-receipt-print="${escapeHtml(record._id)}" data-payment-id="${escapeHtml(payment._id)}">Chapisha</button></td></tr>`;
-    }).join('') : '<tr><td colspan="6" class="empty">Hakuna risiti zilizolingana.</td></tr>';
+    document.getElementById('receiptCount').textContent = `${receipts.length} bili zinaonekana`;
+    document.getElementById('receiptRows').innerHTML = receipts.length ? receipts.map(({ record }) => {
+      const receiptNumber = record.invoiceNumber || `MW-${String(record._id).slice(-8).toUpperCase()}`;
+      const paid = (record.payments || []).filter(item => item.status === 'approved').reduce((sum, item) => sum + Number(item.amount || 0), 0);
+      const balance = Math.max(0, Number(record.total || 0) - paid);
+      const status = paymentStatus(record);
+      const statusLabel = status.className === 'partial' ? 'Imelipwa sehemu' : status.label;
+      return `<tr><td>${escapeHtml(receiptNumber)}</td><td>${escapeHtml(record.customerName)}<small>${escapeHtml(record.phone)}</small></td><td>${escapeHtml(date(record.date))}</td><td>${money(record.total)}<small>Imelipwa: ${money(paid)}</small></td><td>${money(balance)}</td><td><span class="status ${status.className}">${escapeHtml(statusLabel)}</span></td><td><button class="action" type="button" data-receipt-preview="${escapeHtml(record._id)}">Preview</button><button class="action" type="button" data-receipt-print="${escapeHtml(record._id)}">Chapisha</button></td></tr>`;
+    }).join('') : '<tr><td colspan="7" class="empty">Hakuna bili zilizolingana.</td></tr>';
   };
+  statusTabs.addEventListener('click', event => {
+    const button = event.target.closest('[data-receipt-status]');
+    if (!button) return;
+    selectedReceiptStatus = button.dataset.receiptStatus;
+    statusTabs.querySelectorAll('.filter').forEach(tab => tab.classList.toggle('active', tab === button));
+    renderReceipts();
+  });
   ['receiptSearch', 'receiptMonth'].forEach(id => document.getElementById(id).addEventListener(id === 'receiptSearch' ? 'input' : 'change', renderReceipts));
   panel.addEventListener('click', event => {
     const previewButton = event.target.closest('[data-receipt-preview]');
@@ -437,16 +460,15 @@ const dashboardSmsModeControl=$('smsMode');if(dashboardSmsModeControl){dashboard
     if (previewButton || printButton) {
       const button = previewButton || printButton;
       const record = state.records.find(item => item._id === button.dataset.receiptPreview || item._id === button.dataset.receiptPrint);
-      const payment = record?.payments?.find(item => item._id === button.dataset.paymentId);
-      if (previewButton) window.MickeyReceiptPrint.preview(record, payment);
-      else if (!window.MickeyReceiptPrint.print([{ record, payment }], 'Risiti ya malipo')) toast('Ruhusu dirisha la kuchapisha lifunguke.');
+      if (previewButton) window.MickeyReceiptPrint.preview(record);
+      else if (!window.MickeyReceiptPrint.print([{ record }], 'Taarifa ya bili')) toast('Ruhusu dirisha la kuchapisha lifunguke.');
       return;
     }
   });
   document.getElementById('printVisibleReceipts').addEventListener('click', event => {
     event.stopPropagation();
     const receipts = filteredReceipts();
-    if (!window.MickeyReceiptPrint.print(receipts, 'Risiti zinazoonekana')) toast('Hakuna risiti za kuchapisha au dirisha limezuiwa.');
+    if (!window.MickeyReceiptPrint.print(receipts, 'Bili zinazoonekana')) toast('Hakuna bili za kuchapisha au dirisha limezuiwa.');
   });
   const previousLoad = load;
   load = async function() { await previousLoad(); renderReceipts(); };
