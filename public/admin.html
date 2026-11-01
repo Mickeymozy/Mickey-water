@@ -36,6 +36,7 @@
   <style>
     .shell{max-width:1280px;padding-left:clamp(18px,4vw,56px);padding-right:clamp(18px,4vw,56px)}.top{min-height:58px}.brand{letter-spacing:.01em}.actions .button{min-height:40px}.stats{grid-template-columns:repeat(4,minmax(0,1fr))}.stat{min-height:116px;display:flex;flex-direction:column;justify-content:center}.panel{min-width:0}.panel h2{margin-bottom:8px}.health-item{min-height:76px;display:flex;flex-direction:column;justify-content:center}.button:disabled{opacity:.55;cursor:wait;transform:none}.payment-actions .button{min-height:40px}@media(max-width:720px){.stats{grid-template-columns:1fr 1fr}.top{gap:18px}.panel{padding:22px}}@media(max-width:420px){.stats{grid-template-columns:1fr}.actions{width:100%}.actions .button{flex:1;text-align:center}}
   </style>
+  <link rel="stylesheet" href="portal-refresh.css">
 </head>
 <body><main class="shell"><header class="top"><div class="brand">Mickey Water / Admin</div><div class="actions"><a class="button" href="dashboard.html">Dashboard</a><button class="button" id="logout">Toka</button></div></header><section class="stats"><div class="stat"><small>Watumiaji</small><strong id="users">0</strong></div><div class="stat"><small>Bills</small><strong id="bills">0</strong></div><div class="stat"><small>Jumla billed</small><strong id="billed">TZS 0</strong></div><div class="stat"><small>Imekusanywa</small><strong id="collected">TZS 0</strong></div></section><section class="panel"><h2>Idhini za malipo</h2><p>Thibitisha malipo kabla ya risiti kutumwa.</p><div id="payments"><div class="empty">Inapakia...</div></div></section></main><script>
 const token=localStorage.getItem('mickey_token');const user=JSON.parse(localStorage.getItem('mickey_user')||'{}');if(!token||user.role!=='admin')location.href='index.html';const $=id=>document.getElementById(id);const money=value=>'TZS '+Number(value||0).toLocaleString('sw-TZ');const healthPanel=document.createElement('section');healthPanel.className='panel health-panel';healthPanel.innerHTML='<h2>Hali ya mfumo</h2><div class="health-grid"><div class="health-item" id="healthApi"><small>API</small><strong>Inapima...</strong></div><div class="health-item" id="healthDatabase"><small>Database</small><strong>Inapima...</strong></div><div class="health-item" id="healthSms"><small>SMS API</small><strong>Inapima...</strong></div></div>';document.querySelector('.stats').after(healthPanel);
@@ -133,4 +134,6 @@ const adminSmsModeControl=document.createElement('label');adminSmsModeControl.cl
   renderReceipts();
   loadAdminBillData().catch(error => managementMessage(error.message));
 })();
-</script></body></html>
+</script>
+<script src="portal-admin-refresh.js"></script>
+</body></html>

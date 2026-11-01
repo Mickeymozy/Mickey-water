@@ -24,6 +24,7 @@
     html[data-theme=dark] body{background:linear-gradient(145deg,#101d1d,#152828 58%,#0b1516);color:#eff7f1}html[data-theme=dark] .panel,html[data-theme=dark] .stat,html[data-theme=dark] .profile-dialog,html[data-theme=dark] .receipt-dialog{background:#142626;border-color:#2d4b49;box-shadow:0 22px 60px rgba(0,0,0,.3)}html[data-theme=dark] .account-chip,html[data-theme=dark] .toolbar,html[data-theme=dark] .view-tabs{background:rgba(26,51,50,.82);border-color:#355653}html[data-theme=dark] .field input,html[data-theme=dark] .toolbar input,html[data-theme=dark] .receipt-dialog input{background:#102323;color:#eff7f1;border-color:#355653}html[data-theme=dark] .hero p,html[data-theme=dark] .details,html[data-theme=dark] .panel p,html[data-theme=dark] .empty{color:#a9c0ba}html[data-theme=dark] .record:hover{background:rgba(40,75,72,.45)}html[data-theme=dark] .theme-toggle{background:#18312f;color:#e8f3ed;border-color:#3b5d58}
     @media(max-width:600px){.theme-toggle{padding:7px 9px;font-size:.66rem}}
   </style>
+  <link rel="stylesheet" href="portal-refresh.css">
   </head>
 <body>
   <main class="shell">
@@ -474,4 +475,6 @@ const dashboardSmsModeControl=$('smsMode');if(dashboardSmsModeControl){dashboard
   load = async function() { await previousLoad(); renderReceipts(); };
   renderReceipts();
 })();
-</script></body></html>
+</script>
+<script src="portal-refresh.js"></script>
+</body></html>
