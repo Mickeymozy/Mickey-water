@@ -134,7 +134,7 @@ const canonicalPhone=value=>{const digits=String(value||'').replace(/\D/g,'');re
 function approvedAmount(record){return (record.payments||[]).filter(payment=>payment.status==='approved').reduce((sum,payment)=>sum+Number(payment.amount||0),0)}
 function outstandingForPhone(phone){const matched=state.records.filter(record=>canonicalPhone(record.phone)===canonicalPhone(phone)).sort((a,b)=>new Date(a.date)-new Date(b.date));if(!matched.length){const customer=dashboardCustomers.find(item=>canonicalPhone(item.phone)===canonicalPhone(phone));return Number(customer?.openingBalance||0)}const opening=Number(matched[0].previousDebt||0);const current=matched.reduce((sum,record)=>sum+Number(record.currentBill||Math.max(0,Number(record.total||0)-Number(record.previousDebt||0))),0);return Math.max(0,opening+current-matched.reduce((sum,record)=>sum+approvedAmount(record),0))}
 let dashboardCustomers=[];async function loadDashboardCustomers(){try{const response=await fetch('/api/records/customers',{headers:{Authorization:`Bearer ${token}`}});const data=await response.json();if(!response.ok)throw Error(data.message||'Wateja hawakupatikana');dashboardCustomers=data;const makeOptions=items=>items.map(customer=>`<option value="${escapeHtml(canonicalPhone(customer.phone))}" data-id="${escapeHtml(customer._id||'')}" data-name="${escapeHtml(customer.name)}" data-phone="${escapeHtml(customer.phone)}">${escapeHtml(customer.name)} · ${escapeHtml(customer.phone)}</option>`).join('');$('monthlyCustomer').insertAdjacentHTML('beforeend',makeOptions(data));$('billCustomer').insertAdjacentHTML('beforeend',makeOptions(data.filter(customer=>customer.active!==false)))}catch(error){toast(error.message)}}
-function updateSelectedBillCustomer(){const selected=$('billCustomer').selectedOptions[0];if(!selected?.value)return; $('customerName').value=selected.dataset.name||'';$('phoneNumber').value=selected.dataset.phone||'';if(debtInput)debtInput.value=String(outstandingForPhone(selected.dataset.phone));updatePreview();const units=Math.max(0,Number($('currReading').value||0)-Number($('prevReading').value||0));$('liveTotal').textContent=money(units*Number($('pricePerUnit').value||0)+Number(debtInput?.value||0))}
+function updateSelectedBillCustomer(){const selected=$('billCustomer').selectedOptions[0];if(!selected?.value)return;const customerPhone=selected.dataset.phone||'';const latestBill=state.records.filter(record=>selected.dataset.id&&record.customerId?String(record.customerId)===selected.dataset.id:canonicalPhone(record.phone)===canonicalPhone(customerPhone)).sort((left,right)=>new Date(right.date)-new Date(left.date))[0];$('customerName').value=selected.dataset.name||'';$('phoneNumber').value=customerPhone;$('prevReading').value=String(latestBill?.currReading??0);if(debtInput)debtInput.value=String(outstandingForPhone(customerPhone));updatePreview();const units=Math.max(0,Number($('currReading').value||0)-Number($('prevReading').value||0));$('liveTotal').textContent=money(units*Number($('pricePerUnit').value||0)+Number(debtInput?.value||0))}
 $('billCustomer').addEventListener('change',updateSelectedBillCustomer);['prevReading','currReading','pricePerUnit'].forEach(id=>$(id).addEventListener('input',()=>{updatePreview();const units=Math.max(0,Number($('currReading').value||0)-Number($('prevReading').value||0));$('liveTotal').textContent=money(units*Number($('pricePerUnit').value||0)+Number(debtInput?.value||0))}));
 function renderMonthlyDashboard(){const selectedPhone=$('monthlyCustomer').value;const selectedMonth=$('monthlyMonth').value;const customerRecords=state.records.filter(record=>canonicalPhone(record.phone)===selectedPhone&&(!selectedMonth||String(record.date).slice(0,7)===selectedMonth));const grouped=new Map();customerRecords.forEach(record=>{const key=String(record.date).slice(0,7);const row=grouped.get(key)||{month:key,currentBill:0,previousDebt:0,totalDue:0,paid:0,remaining:0,records:[]};row.currentBill+=Number(record.currentBill||Math.max(0,Number(record.total||0)-Number(record.previousDebt||0)));row.previousDebt+=Number(record.previousDebt||0);row.totalDue+=Number(record.total||0);row.paid+=approvedAmount(record);row.remaining+=Math.max(0,Number(record.total||0)-approvedAmount(record));row.records.push(record);grouped.set(key,row)});const rows=[...grouped.values()].sort((a,b)=>b.month.localeCompare(a.month));$('monthlyRows').innerHTML=rows.length?rows.map(row=>{const status=row.remaining<=0?'Imelipwa':row.paid>0?'Imelipwa nusu':'Haijalipwa';const statusClass=row.remaining<=0?'paid':row.paid>0?'partial':'unpaid';const monthLabel=new Date(`${row.month}-01T00:00:00`).toLocaleDateString('sw-TZ',{month:'long',year:'numeric'});const latest=row.records.sort((a,b)=>new Date(b.date)-new Date(a.date))[0];return `<tr><td>${escapeHtml(monthLabel)}</td><td>${money(row.currentBill)}</td><td>${money(row.previousDebt)}</td><td>${money(row.totalDue)}</td><td>${money(row.paid)}</td><td>${money(row.remaining)}</td><td><span class="status ${statusClass}">${status}</span></td><td><button type="button" class="action" onclick="openCustomerProfile('${latest._id}')">Angalia</button>${isAdmin?` <button type="button" class="action" onclick="editBillRecord('${latest._id}')">Hariri</button>`:''}</td></tr>`}).join(''):'<tr><td colspan="8" class="empty">Hakuna bili kwa mwezi huu.</td></tr>'}
 $('monthlyCustomer').onchange=renderMonthlyDashboard;$('monthlyMonth').value=new Date().toISOString().slice(0,7);$('monthlyMonth').onchange=renderMonthlyDashboard;
@@ -181,7 +181,7 @@ const originalTemplateMessageSender=sendMessage;sendMessage=function(record,text
   const allRecordsTab = document.createElement('button');
   allRecordsTab.type = 'button';
   allRecordsTab.className = 'view-tab';
-  allRecordsTab.textContent = 'Records zote';
+  allRecordsTab.textContent = 'Records';
   views.append(allRecordsTab);
   const receiptsTab = document.createElement('button');
   receiptsTab.type = 'button';
@@ -192,11 +192,13 @@ const originalTemplateMessageSender=sendMessage;sendMessage=function(record,text
   const tabEntries = [
     { button: billTab, panel: billPanel, available: isAdmin },
     { button: historyTab, panel: historyPanel, available: isAdmin },
-    { button: monthlyTab, panel: monthlyPanel, available: isAdmin },
+    { button: monthlyTab, panel: monthlyPanel, available: false },
     { button: monthlyCustomerTab, panel: monthlyCustomerPanel, available: true },
     { button: allRecordsTab, panel: recordsTable, available: true },
     { button: receiptsTab, panel: receiptsPanel, available: true }
   ];
+  monthlyCustomerTab.textContent = isAdmin ? 'Wateja' : 'Historia yangu';
+  views.dataset.orientation = 'vertical';
   views.setAttribute('role', 'tablist');
   views.setAttribute('aria-label', 'Sehemu za dashboard');
   tabEntries.forEach(({ button, panel, available }, index) => {
@@ -225,7 +227,7 @@ const originalTemplateMessageSender=sendMessage;sendMessage=function(record,text
   availableTabs.forEach((entry, index) => {
     entry.button.onclick = () => activateTab(entry);
     entry.button.onkeydown = event => {
-      const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
+      const direction = event.key === 'ArrowDown' ? 1 : event.key === 'ArrowUp' ? -1 : 0;
       const targetIndex = event.key === 'Home' ? 0 : event.key === 'End' ? availableTabs.length - 1 : (index + direction + availableTabs.length) % availableTabs.length;
       if (direction || event.key === 'Home' || event.key === 'End') {
         event.preventDefault();

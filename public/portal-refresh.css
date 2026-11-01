@@ -159,3 +159,14 @@ html :focus-visible{outline:3px solid rgba(30,142,164,.35);outline-offset:2px}
 .record-action-menu-content .action{width:100%;min-height:34px}
 html[data-theme=dark] body .overview-bill,html[data-theme=dark] body .overview-consumption{background:linear-gradient(145deg,var(--white),rgba(59,182,176,.06));border-color:var(--line)}
 @media(max-width:760px){.dashboard-overview{grid-template-columns:1fr}.overview-bill,.overview-consumption{padding:16px}.consumption-chart{height:112px}}
+.dashboard-layout{display:grid;grid-template-columns:minmax(180px,220px) minmax(0,1fr);align-items:start;gap:16px}
+html body .dashboard-layout>.view-tabs{position:sticky;top:14px;display:grid;align-content:start;gap:4px;width:100%;margin:0;padding:7px;overflow:visible;border-radius:9px}
+html body .dashboard-layout>.view-tabs .view-tab{width:100%;min-height:42px;padding:10px 12px;text-align:left}
+html body .dashboard-layout>.view-tabs .view-tab.active{text-align:left}
+html body .dashboard-layout>.workspace{min-width:0}
+@media(max-width:900px){.dashboard-layout{grid-template-columns:minmax(155px,185px) minmax(0,1fr);gap:12px}}
+@media(max-width:760px){
+  .dashboard-layout{grid-template-columns:minmax(0,1fr);gap:10px}
+  html body .dashboard-layout>.view-tabs{position:sticky;top:4px;z-index:10;display:flex;flex-direction:row;gap:4px;overflow-x:auto;scrollbar-width:thin}
+  html body .dashboard-layout>.view-tabs .view-tab{width:auto;min-width:max-content;min-height:38px;padding:8px 11px;text-align:center}
+}

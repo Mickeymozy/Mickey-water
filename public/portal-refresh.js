@@ -6,6 +6,13 @@
   overview.innerHTML = '<section class="overview-bill"><div class="overview-head"><div><p class="overview-kicker">BILI YA KARIBUNI</p><p class="overview-invoice" id="overviewInvoice">Inapakia taarifa...</p></div><span class="status" id="overviewStatus"></span></div><strong class="overview-amount" id="overviewAmount">TZS 0</strong><div class="overview-details"><span id="overviewDate"></span><span id="overviewBalance"></span></div><div class="overview-progress"><span id="overviewProgress"></span></div><button class="primary" id="overviewPay" type="button">Lipa sasa</button></section><section class="overview-consumption"><div class="overview-consumption-head"><div><p class="overview-kicker">MATUMIZI YA MAJI</p><h2>Miezi ya karibuni</h2></div><span id="overviewUnits">0 Units</span></div><div class="consumption-chart" id="overviewChart" role="img" aria-label="Grafu ya matumizi ya maji ya miezi sita ya karibuni"></div></section>';
   const views = document.querySelector('.view-tabs');
   if (!isAdmin && views) views.before(overview);
+  if (views) {
+    const layout = document.createElement('div');
+    layout.className = 'dashboard-layout';
+    views.before(layout);
+    layout.append(views, document.querySelector('.workspace'));
+    views.setAttribute('aria-label', 'Sehemu kuu za portal');
+  }
 
   function renderOverview() {
     if (isAdmin || !overview.isConnected) return;
