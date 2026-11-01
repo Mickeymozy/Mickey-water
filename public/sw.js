@@ -1,4 +1,4 @@
-const CACHE='mickey-water-v4';
+const CACHE='mickey-water-v5';
 const APP_SHELL=['/','/index.html','/dashboard.html','/admin.html','/forgot-password.html','/reset-password.html','/receipt-print.js','/portal-refresh.css','/portal-refresh.js','/portal-admin-refresh.js','/manifest.json'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(APP_SHELL))));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key))))));

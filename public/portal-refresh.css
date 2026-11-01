@@ -170,3 +170,44 @@ html body .dashboard-layout>.workspace{min-width:0}
   html body .dashboard-layout>.view-tabs{position:sticky;top:4px;z-index:10;display:flex;flex-direction:row;gap:4px;overflow-x:auto;scrollbar-width:thin}
   html body .dashboard-layout>.view-tabs .view-tab{width:auto;min-width:max-content;min-height:38px;padding:8px 11px;text-align:center}
 }
+html body.portal-dashboard .hero{display:none}
+html body.portal-dashboard .stats{margin-top:0}
+html body .page{max-width:1160px;padding:24px clamp(16px,4vw,42px)}
+html body .main{grid-template-columns:minmax(0,1.1fr) minmax(340px,.8fr);gap:clamp(28px,5vw,68px);padding:52px 0 42px}
+html body .main h1{max-width:600px;font:700 clamp(2.8rem,5vw,4.6rem)/1.02 "Plus Jakarta Sans","Trebuchet MS",Verdana,sans-serif;letter-spacing:0}
+html body .intro{max-width:430px;margin:18px 0;font:400 .94rem/1.65 "Plus Jakarta Sans","Trebuchet MS",Verdana,sans-serif}
+html body .note{max-width:430px;padding:13px 0 0;border-top:2px solid var(--teal);color:var(--muted);font:600 .78rem/1.55 "Plus Jakarta Sans","Trebuchet MS",Verdana,sans-serif}
+html body .box{padding:clamp(22px,3vw,30px);border:1px solid var(--line);border-radius:10px;background:var(--white);box-shadow:var(--shadow);backdrop-filter:none}
+html body .box:before{display:none}
+html body .box h2{font:700 1.4rem "Plus Jakarta Sans","Trebuchet MS",Verdana,sans-serif}
+html body .tabs{gap:4px;margin-bottom:20px;padding:4px;border:1px solid var(--line);border-radius:7px;background:var(--paper)}
+html body .tab{flex:1;padding:9px 10px;border:0;border-radius:5px;font:700 .72rem "Plus Jakarta Sans","Trebuchet MS",Verdana,sans-serif}
+html body .tab.active{border:0;background:var(--white);color:var(--teal-dark);box-shadow:0 1px 5px rgba(23,50,74,.1)}
+html body .field input,html body .field select{font-family:"Plus Jakarta Sans","Trebuchet MS",Verdana,sans-serif}
+html body .submit{box-shadow:none;font-family:"Plus Jakarta Sans","Trebuchet MS",Verdana,sans-serif}
+html body .theme-toggle{border-radius:6px;background:var(--white);color:var(--ink)}
+html body .top{font:700 1rem "Plus Jakarta Sans","Trebuchet MS",Verdana,sans-serif}
+html body .top:after{display:none}
+html body .health-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+html body .health-item{min-width:0;padding:12px;border:1px solid var(--line);border-radius:7px;background:rgba(8,127,134,.035)}
+html body .health-item small{color:var(--muted);font-size:.62rem}
+html body .health-item strong{display:block;margin-top:5px;overflow-wrap:anywhere;font-size:.75rem}
+html body .csv-form{display:flex;align-items:center;gap:8px;max-width:620px}
+html body .csv-form input{flex:1;min-width:0;min-height:40px;border:1px solid var(--line);border-radius:6px;background:var(--white);color:var(--ink);padding:9px 11px}
+html body .admin-billing-panel,html body .management-panel,html body .admin-receipts-panel,html body .csv-panel,html body .health-panel{margin:14px 0}
+html body .management-grid{gap:18px}
+html body .admin-existing-bills{padding-top:14px}
+html body .admin-existing-head{gap:10px}
+html body .payment{padding:14px 0}
+html body .payment-actions{flex-wrap:wrap}
+html[data-theme=dark] body .box{background:var(--white);border-color:var(--line)}
+html[data-theme=dark] body .tabs,html[data-theme=dark] body .field input,html[data-theme=dark] body .field select,html[data-theme=dark] body .csv-form input{background:#112330;color:var(--ink);border-color:var(--line)}
+@media(max-width:900px){html body .main{grid-template-columns:minmax(0,1fr) minmax(320px,.9fr);gap:26px}}
+@media(max-width:720px){
+  html body .main{grid-template-columns:1fr;gap:24px;padding:34px 0 28px}
+  html body .main h1{font-size:2.7rem}
+  html body .health-grid{grid-template-columns:1fr}
+  html body .csv-form{align-items:stretch;flex-direction:column}
+  html body .csv-form .button{width:100%}
+}
+@media(max-width:520px){html body .main h1{font-size:2.25rem}html body .box{padding:20px}html body .actions{flex-wrap:wrap}}

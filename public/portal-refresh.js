@@ -1,5 +1,6 @@
 (() => {
   const isAdmin = user.role === 'admin';
+  document.body.classList.add('portal-dashboard');
   const overview = document.createElement('section');
   overview.className = 'dashboard-overview';
   overview.setAttribute('aria-label', 'Muhtasari wa bili na matumizi');
