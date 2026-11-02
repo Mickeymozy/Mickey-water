@@ -138,4 +138,90 @@ const adminSmsModeControl=document.createElement('label');adminSmsModeControl.cl
 })();
 </script>
 <script src="portal-admin-refresh.js"></script>
+<script>
+(() => {
+  const shell = document.querySelector('.shell');
+  const summaryPanels = [shell.querySelector('.stats'), shell.querySelector('.health-panel')].filter(Boolean);
+  const billingPanels = [shell.querySelector('.admin-billing-panel')].filter(Boolean);
+  const managementPanels = [shell.querySelector('.management-panel')].filter(Boolean);
+  const paymentsPanel = [...shell.querySelectorAll(':scope > .panel')].find(panel => panel.querySelector('#payments'));
+  const paymentPanels = [paymentsPanel, shell.querySelector('.csv-panel'), shell.querySelector('.admin-receipts-panel')].filter(Boolean);
+  const groups = [
+    { label: 'Muhtasari', panels: summaryPanels },
+    { label: 'Bili', panels: billingPanels },
+    { label: 'Usimamizi', panels: managementPanels },
+    { label: 'Malipo na risiti', panels: paymentPanels }
+  ].filter(group => group.panels.length);
+  const navigation = document.createElement('nav');
+  navigation.className = 'admin-slider-tabs';
+  navigation.setAttribute('role', 'tablist');
+  navigation.setAttribute('aria-label', 'Sehemu za admin');
+  const slider = document.createElement('div');
+  slider.className = 'admin-slider';
+  groups.forEach((group, index) => {
+    const tab = document.createElement('button');
+    tab.type = 'button';
+    tab.className = 'admin-slider-tab';
+    tab.id = `admin-slide-tab-${index}`;
+    tab.setAttribute('role', 'tab');
+    tab.setAttribute('aria-selected', String(index === 0));
+    tab.setAttribute('aria-controls', `admin-slide-${index}`);
+    tab.tabIndex = index === 0 ? 0 : -1;
+    tab.textContent = group.label;
+    navigation.append(tab);
+
+    const page = document.createElement('section');
+    page.className = 'admin-slider-page';
+    page.id = `admin-slide-${index}`;
+    page.setAttribute('role', 'tabpanel');
+    page.setAttribute('aria-labelledby', tab.id);
+    page.tabIndex = 0;
+    page.hidden = index !== 0;
+    group.panels.forEach(panel => page.append(panel));
+    slider.append(page);
+    tab.addEventListener('click', () => activate(index));
+    tab.addEventListener('keydown', event => {
+      const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
+      const target = event.key === 'Home' ? 0 : event.key === 'End' ? groups.length - 1 : (index + direction + groups.length) % groups.length;
+      if (direction || event.key === 'Home' || event.key === 'End') {
+        event.preventDefault();
+        activate(target, true);
+      }
+    });
+  });
+  const header = shell.querySelector('.top');
+  header.after(navigation, slider);
+  let activeIndex = 0;
+  function activate(nextIndex, focus = false) {
+    if (nextIndex < 0 || nextIndex >= groups.length || nextIndex === activeIndex) return;
+    const direction = nextIndex > activeIndex ? 'next' : 'previous';
+    navigation.querySelectorAll('[role="tab"]').forEach((tab, index) => {
+      const active = index === nextIndex;
+      tab.classList.toggle('active', active);
+      tab.setAttribute('aria-selected', String(active));
+      tab.tabIndex = active ? 0 : -1;
+    });
+    slider.querySelectorAll('.admin-slider-page').forEach((page, index) => {
+      page.hidden = index !== nextIndex;
+      page.classList.toggle('slide-previous', direction === 'previous');
+    });
+    activeIndex = nextIndex;
+    if (focus) navigation.children[nextIndex].focus();
+  }
+  let touchStart = null;
+  slider.addEventListener('touchstart', event => {
+    if (event.target.closest('button,input,select,textarea,a,.admin-existing-table-wrap,.admin-receipt-scroll,.management-list,.audit-list,.csv-form')) return;
+    touchStart = event.changedTouches[0].clientX;
+  }, { passive: true });
+  slider.addEventListener('touchend', event => {
+    if (touchStart === null) return;
+    const distance = event.changedTouches[0].clientX - touchStart;
+    if (Math.abs(distance) > 60) activate(activeIndex + (distance < 0 ? 1 : -1));
+    touchStart = null;
+  }, { passive: true });
+  const style = document.createElement('style');
+  style.textContent = '.admin-slider-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;margin:0 0 16px;padding:5px;border:1px solid var(--line);border-radius:8px;background:var(--white)}.admin-slider-tab{min-width:0;min-height:42px;padding:9px 10px;border:0;border-radius:6px;background:transparent;color:var(--muted);font:700 .76rem "Plus Jakarta Sans","Trebuchet MS",Verdana,sans-serif;cursor:pointer;transition:background .18s,color .18s,transform .18s}.admin-slider-tab:hover{color:var(--teal);transform:translateY(-1px)}.admin-slider-tab.active{background:var(--teal);color:#fff}.admin-slider-page[hidden]{display:none!important}.admin-slider-page:not([hidden]){animation:admin-slider-in .26s ease both}.admin-slider-page.slide-previous:not([hidden]){animation-name:admin-slider-back}@keyframes admin-slider-in{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:translateX(0)}}@keyframes admin-slider-back{from{opacity:0;transform:translateX(-18px)}to{opacity:1;transform:translateX(0)}}@media(max-width:620px){.admin-slider-tabs{grid-template-columns:repeat(2,minmax(0,1fr))}.admin-slider-tab{min-height:40px}}@media(prefers-reduced-motion:reduce){.admin-slider-page:not([hidden]){animation:none}.admin-slider-tab{transition:none}}';
+  document.head.append(style);
+})();
+</script>
 </body></html>

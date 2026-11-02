@@ -183,6 +183,9 @@ html body .box h2{font:700 1.4rem "Plus Jakarta Sans","Trebuchet MS",Verdana,san
 html body .tabs{gap:4px;margin-bottom:20px;padding:4px;border:1px solid var(--line);border-radius:7px;background:var(--paper)}
 html body .tab{flex:1;padding:9px 10px;border:0;border-radius:5px;font:700 .72rem "Plus Jakarta Sans","Trebuchet MS",Verdana,sans-serif}
 html body .tab.active{border:0;background:var(--white);color:var(--teal-dark);box-shadow:0 1px 5px rgba(23,50,74,.1)}
+html body .tab{transition:background .18s,color .18s,transform .18s}
+html body .form.active{animation:auth-tab-in .24s ease both}
+@keyframes auth-tab-in{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:translateX(0)}}
 html body .field input,html body .field select{font-family:"Plus Jakarta Sans","Trebuchet MS",Verdana,sans-serif}
 html body .submit{box-shadow:none;font-family:"Plus Jakarta Sans","Trebuchet MS",Verdana,sans-serif}
 html body .theme-toggle{border-radius:6px;background:var(--white);color:var(--ink)}

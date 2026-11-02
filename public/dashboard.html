@@ -169,9 +169,30 @@ const originalTemplateMessageSender=sendMessage;sendMessage=function(record,text
   const workspace = document.querySelector('.workspace');
   const views = document.querySelector('.view-tabs');
   const receiptsPanel = document.createElement('section');
-  receiptsPanel.className = 'panel dashboard-receipts-panel';
+  receiptsPanel.className = 'dashboard-receipts-panel activity-view';
   receiptsPanel.innerHTML = '<div class="panel-head"><div><h2>Risiti za malipo</h2><p>Preview na uchapishe malipo yaliyothibitishwa.</p></div><div class="receipt-print-actions"><button class="primary" type="button" id="printVisibleReceipts">Chapisha zinazoonekana</button><label for="blankReceiptCount">Risiti tupu</label><input id="blankReceiptCount" type="number" min="1" max="9" value="3" aria-label="Idadi ya risiti tupu"><button class="action" type="button" id="printBlankReceipts">Chapisha tupu</button></div></div><div class="dashboard-receipt-filters"><input id="receiptSearch" type="search" placeholder="Tafuta risiti, invoice au mteja"><input id="receiptMonth" type="month" aria-label="Chuja risiti kwa mwezi"></div><p class="dashboard-receipt-count" id="receiptCount">0 risiti</p><div class="dashboard-receipt-scroll"><table class="dashboard-receipt-table"><thead><tr><th>Risiti</th><th>Mteja / invoice</th><th>Tarehe</th><th>Kiasi</th><th>Salio</th><th>Vitendo</th></tr></thead><tbody id="receiptRows"><tr><td colspan="6" class="empty">Inapakia risiti...</td></tr></tbody></table></div>';
-  workspace.append(recordsTable, receiptsPanel);
+  recordsTable.className = 'all-records-panel activity-view active';
+  const activityPanel = document.createElement('section');
+  activityPanel.className = 'panel activity-panel';
+  const activitySwitch = document.createElement('div');
+  activitySwitch.className = 'activity-switch';
+  activitySwitch.setAttribute('role', 'group');
+  activitySwitch.setAttribute('aria-label', 'Chagua bili au risiti');
+  activitySwitch.innerHTML = '<button type="button" class="activity-switch-button active" data-activity-view="records" aria-pressed="true">Rekodi za bili</button><button type="button" class="activity-switch-button" data-activity-view="receipts" aria-pressed="false">Risiti</button>';
+  activityPanel.append(activitySwitch, recordsTable, receiptsPanel);
+  workspace.append(activityPanel);
+  activitySwitch.addEventListener('click', event => {
+    const button = event.target.closest('[data-activity-view]');
+    if (!button) return;
+    const showReceipts = button.dataset.activityView === 'receipts';
+    recordsTable.classList.toggle('active', !showReceipts);
+    receiptsPanel.classList.toggle('active', showReceipts);
+    activitySwitch.querySelectorAll('[data-activity-view]').forEach(item => {
+      const active = item === button;
+      item.classList.toggle('active', active);
+      item.setAttribute('aria-pressed', String(active));
+    });
+  });
   recordsTable.prepend(utilityBar);
   historyTab.remove();
   historyPanel.remove();
@@ -186,19 +207,13 @@ const originalTemplateMessageSender=sendMessage;sendMessage=function(record,text
   const allRecordsTab = document.createElement('button');
   allRecordsTab.type = 'button';
   allRecordsTab.className = 'view-tab';
-  allRecordsTab.textContent = 'Historia';
+  allRecordsTab.textContent = 'Bili na risiti';
   views.append(allRecordsTab);
-  const receiptsTab = document.createElement('button');
-  receiptsTab.type = 'button';
-  receiptsTab.className = 'view-tab';
-  receiptsTab.textContent = 'Risiti';
-  views.append(receiptsTab);
 
   const tabEntries = [
     { button: billTab, panel: billPanel, available: isAdmin },
     { button: monthlyCustomerTab, panel: monthlyCustomerPanel, available: true },
-    { button: allRecordsTab, panel: recordsTable, available: true },
-    { button: receiptsTab, panel: receiptsPanel, available: true }
+    { button: allRecordsTab, panel: activityPanel, available: true }
   ];
   monthlyCustomerTab.textContent = isAdmin ? 'Wateja' : 'Historia yangu';
   views.dataset.orientation = 'vertical';
@@ -217,14 +232,20 @@ const originalTemplateMessageSender=sendMessage;sendMessage=function(record,text
     panel.tabIndex = 0;
   });
   const availableTabs = tabEntries.filter(entry => entry.available);
+  let activeTabIndex = 0;
   const activateTab = (entry, focus = false) => {
+    const nextIndex = availableTabs.indexOf(entry);
+    const direction = nextIndex >= activeTabIndex ? 'next' : 'previous';
     availableTabs.forEach(({ button, panel }) => {
       const active = button === entry.button;
       button.classList.toggle('active', active);
       button.setAttribute('aria-selected', String(active));
       button.tabIndex = active ? 0 : -1;
       panel.classList.toggle('active-panel', active);
+      panel.classList.toggle('slide-next', active && direction === 'next');
+      panel.classList.toggle('slide-previous', active && direction === 'previous');
     });
+    activeTabIndex = nextIndex;
     if (focus) entry.button.focus();
   };
   const menuToggle = document.createElement('button');
@@ -287,11 +308,29 @@ const originalTemplateMessageSender=sendMessage;sendMessage=function(record,text
       }
     };
   });
+  let touchStart = null;
+  workspace.addEventListener('touchstart', event => {
+    if (event.target.closest('button,input,select,textarea,a,.all-records-scroll,.dashboard-receipt-scroll,.monthly-table-wrap,.customer-table-wrap')) return;
+    touchStart = event.changedTouches[0].clientX;
+  }, { passive: true });
+  workspace.addEventListener('touchend', event => {
+    if (touchStart === null) return;
+    const distance = event.changedTouches[0].clientX - touchStart;
+    if (Math.abs(distance) > 70) {
+      const direction = distance < 0 ? 1 : -1;
+      const target = Math.max(0, Math.min(availableTabs.length - 1, activeTabIndex + direction));
+      activateTab(availableTabs[target]);
+    }
+    touchStart = null;
+  }, { passive: true });
   activateTab(availableTabs.find(entry => entry.button === allRecordsTab) || availableTabs[0]);
 
   const navigationStyle = document.createElement('style');
   navigationStyle.textContent = '.view-tabs{display:flex;align-items:center;gap:6px;width:100%;margin:0 0 18px;padding:6px;overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--white);scrollbar-width:thin}.view-tab{flex:0 0 auto;min-height:42px;padding:10px 14px;border:1px solid transparent;border-radius:7px;background:transparent;color:var(--muted);font:700 .78rem "Trebuchet MS",Verdana,sans-serif;white-space:nowrap}.view-tab:hover{background:rgba(8,127,115,.08);color:var(--teal)}.view-tab.active{background:var(--teal);color:#fff;box-shadow:0 3px 9px rgba(8,127,115,.2)}.view-tab:focus-visible{outline:3px solid rgba(201,104,50,.35);outline-offset:2px}.workspace{display:block}.workspace>.panel{display:none;min-width:0}.workspace>.panel.active-panel{display:block}.all-records-panel{display:none!important}.all-records-panel.active-panel{display:block!important}html[data-theme=dark] .view-tabs{background:#142626;border-color:#355653}html[data-theme=dark] .view-tab{color:#a9c0ba}html[data-theme=dark] .view-tab.active{background:var(--teal);color:#fff}@media(max-width:520px){.view-tabs{margin-right:-2px}.view-tab{min-height:40px;padding:9px 12px}}';
   document.head.append(navigationStyle);
+  const activitySwitchStyle = document.createElement('style');
+  activitySwitchStyle.textContent = '.activity-switch{display:flex;gap:5px;width:max-content;max-width:100%;margin:0 0 14px;padding:4px;border:1px solid var(--line);border-radius:7px;background:rgba(25,123,120,.05)}.activity-switch-button{min-height:36px;padding:8px 12px;border:0;border-radius:5px;background:transparent;color:var(--muted);font:700 .72rem "Trebuchet MS",Verdana,sans-serif}.activity-switch-button.active{background:var(--teal);color:#fff}.activity-view{display:none!important}.activity-view.active{display:block!important}.activity-panel{overflow:hidden}.activity-panel .all-records-filters{margin-top:0}html[data-theme=dark] .activity-switch{background:#172f30;border-color:#385653}';
+  document.head.append(activitySwitchStyle);
   const slideMenuStyle = document.createElement('style');
   slideMenuStyle.textContent = '.view-tabs{position:fixed;inset:0 auto 0 0;z-index:1002;width:min(290px,86vw);height:100vh;height:100dvh;margin:0;padding:78px 14px 18px;display:flex;flex-direction:column;align-items:stretch;gap:7px;overflow-y:auto;border:0;border-right:1px solid var(--line);border-radius:0 12px 12px 0;background:var(--white);box-shadow:18px 0 44px rgba(16,42,43,.2);transform:translateX(-105%);visibility:hidden;transition:transform .24s ease,visibility 0s linear .24s}.view-tabs.open{transform:translateX(0);visibility:visible;transition:transform .24s ease,visibility 0s}.dashboard-menu-heading{padding:0 12px 10px;color:var(--muted);font:700 .66rem Arial,sans-serif;letter-spacing:.08em}.view-tabs .view-tab{width:100%;min-height:46px;padding:12px 13px;text-align:left;white-space:normal}.dashboard-menu-toggle{display:grid;place-items:center;flex:0 0 38px;width:38px;height:38px;margin-right:2px;border:1px solid var(--line);border-radius:6px;background:var(--white);color:var(--ink);font:700 20px/1 Arial,sans-serif}.dashboard-menu-toggle:hover{border-color:var(--teal);color:var(--teal)}.dashboard-menu-backdrop{position:fixed;inset:0;z-index:1001;width:100%;height:100%;border:0;background:rgba(12,28,29,.46);cursor:default}.dashboard-menu-backdrop[hidden]{display:none}body.dashboard-menu-open{overflow:hidden}html[data-theme=dark] .view-tabs{background:#142626;border-color:#355653}html[data-theme=dark] .dashboard-menu-toggle{background:#142626;color:#eff7f1;border-color:#355653}@media(prefers-reduced-motion:reduce){.view-tabs,.dashboard-menu-toggle{transition:none}}';
   document.head.append(slideMenuStyle);
@@ -557,6 +596,8 @@ const dashboardSmsModeControl=$('smsMode');if(dashboardSmsModeControl){dashboard
   .hero,.stats .stat{animation:dashboard-enter .48s ease both}
   .stats .stat:nth-child(2){animation-delay:.06s}.stats .stat:nth-child(3){animation-delay:.12s}
   .workspace>.panel.active-panel{animation:dashboard-enter .28s ease both}
+  .workspace>.panel.active-panel.slide-next{animation:dashboard-slide-next .28s ease both}
+  .workspace>.panel.active-panel.slide-previous{animation:dashboard-slide-previous .28s ease both}
   .dashboard-menu-backdrop{background:rgba(17,42,42,.42)}
   html[data-theme=dark]{--ink:#e7f1ed;--muted:#aec2bb;--paper:#142829;--white:#203a3b;--line:#385653;--teal:#62b7a7;--teal-dark:#8ad0bd;--lime:#f1bf59;--orange:#ef8c72;--shadow:0 18px 48px rgba(0,0,0,.2)}
   html[data-theme=dark] body{background:linear-gradient(145deg,#142829,#1b3535 58%,#273b3a);color:var(--ink)}
@@ -565,6 +606,8 @@ const dashboardSmsModeControl=$('smsMode');if(dashboardSmsModeControl){dashboard
   html[data-theme=dark] .view-tabs .view-tab.active{background:#277f77;color:#fff}
   html[data-theme=dark] .primary:hover{background:#1a625e}
   @keyframes dashboard-enter{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes dashboard-slide-next{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+  @keyframes dashboard-slide-previous{from{opacity:0;transform:translateX(-20px)}to{opacity:1;transform:translateX(0)}}
   @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
 </style>
 </body></html>

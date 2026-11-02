@@ -376,4 +376,24 @@
 <script>
 const themeToggle=document.getElementById('themeToggle')||document.createElement('button');if(!themeToggle.id){themeToggle.id='themeToggle';themeToggle.type='button';themeToggle.className='theme-toggle';document.querySelector('.top').append(themeToggle)}document.documentElement.dataset.theme=localStorage.getItem('mickey_theme')||'light';function updateThemeToggle(){const dark=document.documentElement.dataset.theme==='dark';themeToggle.textContent=dark?'☀ Light':'☾ Dark';themeToggle.setAttribute('aria-label',dark?'Tumia light theme':'Tumia dark theme')}themeToggle.onclick=()=>{document.documentElement.dataset.theme=document.documentElement.dataset.theme==='dark'?'light':'dark';localStorage.setItem('mickey_theme',document.documentElement.dataset.theme);updateThemeToggle()};updateThemeToggle();
 const $=id=>document.getElementById(id);function message(id,text,type){$(id).className='message '+type;$(id).textContent=text}document.querySelectorAll('.tab').forEach(tab=>tab.onclick=()=>{document.querySelectorAll('.tab,.form').forEach(el=>el.classList.remove('active'));tab.classList.add('active');$(tab.dataset.tab).classList.add('active')});$('loginType').onchange=()=>{const isAdmin=$('loginType').value==='admin';$('loginEmail').value=isAdmin?'mickidadyhamza@gmail.com':'';$('loginEmail').readOnly=isAdmin;$('loginPassword').required=true;$('loginPassword').value=''};$('loginForm').onsubmit=async e=>{e.preventDefault();$('loginError').className='';try{const isAdmin=$('loginType').value==='admin';const email=$('loginEmail').value.trim();if(isAdmin&&email.toLowerCase()!=='mickidadyhamza@gmail.com')throw Error('Tumia admin email iliyoruhusiwa');const res=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:$('loginPassword').value})});const data=await res.json();if(!res.ok)throw Error(data.message||'Taarifa si sahihi');if(isAdmin&&data.user.role!=='admin')throw Error('Akaunti hii si admin');localStorage.setItem('mickey_token',data.token);localStorage.setItem('mickey_user',JSON.stringify(data.user));location.href=isAdmin?'admin.html':'dashboard.html'}catch(err){message('loginError',err.message,'error')}};$('registerForm').onsubmit=e=>{e.preventDefault();message('registerError','Usajili wa staff unasimamiwa na admin. Wasiliana na msimamizi wa mfumo.','error')};
+</script><script>
+(() => {
+  const box = document.querySelector('.box');
+  const tabs = [...document.querySelectorAll('.box .tab')];
+  let start = null;
+  box.addEventListener('touchstart', event => {
+    if (event.target.closest('input,select,button,a')) return;
+    start = { x: event.changedTouches[0].clientX, y: event.changedTouches[0].clientY };
+  }, { passive: true });
+  box.addEventListener('touchend', event => {
+    if (!start) return;
+    const deltaX = event.changedTouches[0].clientX - start.x;
+    const deltaY = event.changedTouches[0].clientY - start.y;
+    if (Math.abs(deltaX) > 65 && Math.abs(deltaX) > Math.abs(deltaY)) {
+      const activeIndex = tabs.findIndex(tab => tab.classList.contains('active'));
+      tabs[Math.max(0, Math.min(tabs.length - 1, activeIndex + (deltaX < 0 ? 1 : -1)))]?.click();
+    }
+    start = null;
+  }, { passive: true });
+})();
 </script><p style="text-align:center;font: .75rem Arial,sans-serif"><a href="forgot-password.html" style="color:#087f73">Umesahau nywila?</a></p></body></html>
