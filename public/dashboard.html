@@ -2,7 +2,7 @@
 <html lang="sw">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#176b87"><link rel="manifest" href="manifest.json">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#197b78"><link rel="manifest" href="manifest.json">
   <title>Mickey Water | Bills</title>
   <style>
     :root{--ink:#1f2937;--muted:#64748b;--paper:#f4f7fb;--white:#fff;--line:#d8e0ea;--teal:#176b87;--teal-dark:#0e4d63;--lime:#f4c95d;--orange:#d95d39;--shadow:0 18px 45px rgba(31,41,55,.1)}
@@ -173,6 +173,10 @@ const originalTemplateMessageSender=sendMessage;sendMessage=function(record,text
   receiptsPanel.innerHTML = '<div class="panel-head"><div><h2>Risiti za malipo</h2><p>Preview na uchapishe malipo yaliyothibitishwa.</p></div><div class="receipt-print-actions"><button class="primary" type="button" id="printVisibleReceipts">Chapisha zinazoonekana</button><label for="blankReceiptCount">Risiti tupu</label><input id="blankReceiptCount" type="number" min="1" max="9" value="3" aria-label="Idadi ya risiti tupu"><button class="action" type="button" id="printBlankReceipts">Chapisha tupu</button></div></div><div class="dashboard-receipt-filters"><input id="receiptSearch" type="search" placeholder="Tafuta risiti, invoice au mteja"><input id="receiptMonth" type="month" aria-label="Chuja risiti kwa mwezi"></div><p class="dashboard-receipt-count" id="receiptCount">0 risiti</p><div class="dashboard-receipt-scroll"><table class="dashboard-receipt-table"><thead><tr><th>Risiti</th><th>Mteja / invoice</th><th>Tarehe</th><th>Kiasi</th><th>Salio</th><th>Vitendo</th></tr></thead><tbody id="receiptRows"><tr><td colspan="6" class="empty">Inapakia risiti...</td></tr></tbody></table></div>';
   workspace.append(recordsTable, receiptsPanel);
   recordsTable.prepend(utilityBar);
+  historyTab.remove();
+  historyPanel.remove();
+  monthlyTab.remove();
+  monthlyPanel.remove();
 
   const tableStyle = document.createElement('style');
   tableStyle.textContent = '.all-records-panel{display:block!important}.all-records-filters{display:grid;grid-template-columns:minmax(200px,1.4fr) minmax(180px,1fr) 170px 170px;gap:9px;margin:16px 0}.all-records-filters input,.all-records-filters select{min-width:0;min-height:42px;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--white);color:var(--ink);font:.82rem Arial,sans-serif}.all-records-summary{display:flex;gap:22px;flex-wrap:wrap;padding:11px 0;color:var(--muted);font:.74rem Arial,sans-serif}.all-records-summary strong{color:var(--ink)}.all-records-scroll{max-width:100%;overflow:auto}.all-records-table{width:100%;min-width:1120px;border-collapse:collapse;font:.74rem Arial,sans-serif}.all-records-table th,.all-records-table td{padding:11px 9px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}.all-records-table th{position:sticky;top:0;background:var(--white);color:var(--muted);font-size:.63rem;text-transform:uppercase;letter-spacing:.04em}.all-records-table tbody tr:hover{background:rgba(23,107,135,.045)}.all-records-table td:first-child button{max-width:190px;overflow:hidden;text-overflow:ellipsis}.table-customer-name{border:0;background:none;padding:0;color:var(--teal);font:700 .78rem Arial,sans-serif;text-align:left;cursor:pointer}.table-customer-name:hover{text-decoration:underline}.all-records-table .details-action{border:1px solid var(--line);border-radius:6px;background:var(--white);padding:7px 9px;color:var(--teal);font:700 .68rem Arial,sans-serif;cursor:pointer}html[data-theme=dark] .all-records-filters input,html[data-theme=dark] .all-records-filters select,html[data-theme=dark] .all-records-table th,html[data-theme=dark] .all-records-table .details-action{background:#142626;color:#eff7f1;border-color:#355653}html[data-theme=dark] .all-records-table tbody tr:hover{background:rgba(70,130,120,.13)}html[data-theme=dark] .all-records-summary strong{color:#eff7f1}@media(max-width:820px){.all-records-filters{grid-template-columns:1fr 1fr}.all-records-filters input[type=search]{grid-column:1/-1}}@media(max-width:520px){.all-records-filters{grid-template-columns:1fr}.all-records-filters input[type=search]{grid-column:auto}.all-records-summary{gap:12px;flex-direction:column}}';
@@ -192,8 +196,6 @@ const originalTemplateMessageSender=sendMessage;sendMessage=function(record,text
 
   const tabEntries = [
     { button: billTab, panel: billPanel, available: isAdmin },
-    { button: historyTab, panel: historyPanel, available: false },
-    { button: monthlyTab, panel: monthlyPanel, available: false },
     { button: monthlyCustomerTab, panel: monthlyCustomerPanel, available: true },
     { button: allRecordsTab, panel: recordsTable, available: true },
     { button: receiptsTab, panel: receiptsPanel, available: true }
@@ -225,8 +227,57 @@ const originalTemplateMessageSender=sendMessage;sendMessage=function(record,text
     });
     if (focus) entry.button.focus();
   };
+  const menuToggle = document.createElement('button');
+  menuToggle.type = 'button';
+  menuToggle.className = 'dashboard-menu-toggle';
+  menuToggle.setAttribute('aria-label', 'Fungua menyu');
+  menuToggle.setAttribute('aria-controls', 'dashboardNavigation');
+  menuToggle.setAttribute('aria-expanded', 'false');
+  menuToggle.title = 'Fungua menyu';
+  menuToggle.textContent = '☰';
+  document.querySelector('.brand').prepend(menuToggle);
+  views.id = 'dashboardNavigation';
+  const menuHeading = document.createElement('strong');
+  menuHeading.className = 'dashboard-menu-heading';
+  menuHeading.textContent = 'SEHEMU';
+  views.prepend(menuHeading);
+  const menuBackdrop = document.createElement('button');
+  menuBackdrop.type = 'button';
+  menuBackdrop.className = 'dashboard-menu-backdrop';
+  menuBackdrop.setAttribute('aria-label', 'Funga menyu');
+  menuBackdrop.hidden = true;
+  document.body.append(menuBackdrop);
+  const closeMenu = () => {
+    views.classList.remove('open');
+    document.body.classList.remove('dashboard-menu-open');
+    menuBackdrop.hidden = true;
+    menuToggle.setAttribute('aria-expanded', 'false');
+    menuToggle.setAttribute('aria-label', 'Fungua menyu');
+    menuToggle.title = 'Fungua menyu';
+    menuToggle.textContent = '☰';
+    menuToggle.focus();
+  };
+  const toggleMenu = () => {
+    const open = !views.classList.contains('open');
+    views.classList.toggle('open', open);
+    document.body.classList.toggle('dashboard-menu-open', open);
+    menuBackdrop.hidden = !open;
+    menuToggle.setAttribute('aria-expanded', String(open));
+    menuToggle.setAttribute('aria-label', open ? 'Funga menyu' : 'Fungua menyu');
+    menuToggle.title = open ? 'Funga menyu' : 'Fungua menyu';
+    menuToggle.textContent = open ? '×' : '☰';
+    if (open) availableTabs[0]?.button.focus();
+  };
+  menuToggle.addEventListener('click', toggleMenu);
+  menuBackdrop.addEventListener('click', closeMenu);
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && views.classList.contains('open')) {
+      closeMenu();
+      menuToggle.focus();
+    }
+  });
   availableTabs.forEach((entry, index) => {
-    entry.button.onclick = () => activateTab(entry);
+    entry.button.onclick = () => { activateTab(entry); closeMenu(); };
     entry.button.onkeydown = event => {
       const direction = event.key === 'ArrowDown' ? 1 : event.key === 'ArrowUp' ? -1 : 0;
       const targetIndex = event.key === 'Home' ? 0 : event.key === 'End' ? availableTabs.length - 1 : (index + direction + availableTabs.length) % availableTabs.length;
@@ -241,6 +292,9 @@ const originalTemplateMessageSender=sendMessage;sendMessage=function(record,text
   const navigationStyle = document.createElement('style');
   navigationStyle.textContent = '.view-tabs{display:flex;align-items:center;gap:6px;width:100%;margin:0 0 18px;padding:6px;overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--white);scrollbar-width:thin}.view-tab{flex:0 0 auto;min-height:42px;padding:10px 14px;border:1px solid transparent;border-radius:7px;background:transparent;color:var(--muted);font:700 .78rem "Trebuchet MS",Verdana,sans-serif;white-space:nowrap}.view-tab:hover{background:rgba(8,127,115,.08);color:var(--teal)}.view-tab.active{background:var(--teal);color:#fff;box-shadow:0 3px 9px rgba(8,127,115,.2)}.view-tab:focus-visible{outline:3px solid rgba(201,104,50,.35);outline-offset:2px}.workspace{display:block}.workspace>.panel{display:none;min-width:0}.workspace>.panel.active-panel{display:block}.all-records-panel{display:none!important}.all-records-panel.active-panel{display:block!important}html[data-theme=dark] .view-tabs{background:#142626;border-color:#355653}html[data-theme=dark] .view-tab{color:#a9c0ba}html[data-theme=dark] .view-tab.active{background:var(--teal);color:#fff}@media(max-width:520px){.view-tabs{margin-right:-2px}.view-tab{min-height:40px;padding:9px 12px}}';
   document.head.append(navigationStyle);
+  const slideMenuStyle = document.createElement('style');
+  slideMenuStyle.textContent = '.view-tabs{position:fixed;inset:0 auto 0 0;z-index:1002;width:min(290px,86vw);height:100vh;height:100dvh;margin:0;padding:78px 14px 18px;display:flex;flex-direction:column;align-items:stretch;gap:7px;overflow-y:auto;border:0;border-right:1px solid var(--line);border-radius:0 12px 12px 0;background:var(--white);box-shadow:18px 0 44px rgba(16,42,43,.2);transform:translateX(-105%);visibility:hidden;transition:transform .24s ease,visibility 0s linear .24s}.view-tabs.open{transform:translateX(0);visibility:visible;transition:transform .24s ease,visibility 0s}.dashboard-menu-heading{padding:0 12px 10px;color:var(--muted);font:700 .66rem Arial,sans-serif;letter-spacing:.08em}.view-tabs .view-tab{width:100%;min-height:46px;padding:12px 13px;text-align:left;white-space:normal}.dashboard-menu-toggle{display:grid;place-items:center;flex:0 0 38px;width:38px;height:38px;margin-right:2px;border:1px solid var(--line);border-radius:6px;background:var(--white);color:var(--ink);font:700 20px/1 Arial,sans-serif}.dashboard-menu-toggle:hover{border-color:var(--teal);color:var(--teal)}.dashboard-menu-backdrop{position:fixed;inset:0;z-index:1001;width:100%;height:100%;border:0;background:rgba(12,28,29,.46);cursor:default}.dashboard-menu-backdrop[hidden]{display:none}body.dashboard-menu-open{overflow:hidden}html[data-theme=dark] .view-tabs{background:#142626;border-color:#355653}html[data-theme=dark] .dashboard-menu-toggle{background:#142626;color:#eff7f1;border-color:#355653}@media(prefers-reduced-motion:reduce){.view-tabs,.dashboard-menu-toggle{transition:none}}';
+  document.head.append(slideMenuStyle);
 
   const canonicalPhone = value => { const digits = String(value || '').replace(/\D/g, ''); return digits.startsWith('0') ? `255${digits.slice(1)}` : digits; };
   const approved = record => (record.payments || []).filter(payment => payment.status === 'approved').reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
@@ -489,4 +543,28 @@ const dashboardSmsModeControl=$('smsMode');if(dashboardSmsModeControl){dashboard
 })();
 </script>
 <script src="portal-refresh.js"></script>
+<style id="dashboardThemeStyle">
+  :root{--ink:#183234;--muted:#667c79;--paper:#eff6f3;--white:#fffefa;--line:#d5e2dd;--teal:#197b78;--teal-dark:#145b5a;--lime:#f1bf59;--orange:#d66b56;--shadow:0 16px 42px rgba(24,50,52,.09)}
+  body{background:linear-gradient(145deg,#e9f4f1 0%,#f5f7f2 58%,#f8f0e9 100%);color:var(--ink)}
+  .mark{background:var(--teal);color:#fff3d4;box-shadow:4px 4px 0 rgba(241,191,89,.72)}
+  .hero-note{border-color:var(--orange);color:var(--ink)}
+  .stat,.panel{border-color:var(--line);box-shadow:var(--shadow)}
+  .toolbar,.view-tabs{border-color:var(--line)}
+  .primary{background:var(--teal);box-shadow:0 8px 18px rgba(25,123,120,.16)}
+  .primary:hover{background:var(--teal-dark)}
+  .action:hover,.utility-button:hover,.view-tab:hover{border-color:var(--teal);color:var(--teal)}
+  .status.unpaid,.profile-debt{color:var(--orange)}
+  .hero,.stats .stat{animation:dashboard-enter .48s ease both}
+  .stats .stat:nth-child(2){animation-delay:.06s}.stats .stat:nth-child(3){animation-delay:.12s}
+  .workspace>.panel.active-panel{animation:dashboard-enter .28s ease both}
+  .dashboard-menu-backdrop{background:rgba(17,42,42,.42)}
+  html[data-theme=dark]{--ink:#e7f1ed;--muted:#aec2bb;--paper:#142829;--white:#203a3b;--line:#385653;--teal:#62b7a7;--teal-dark:#8ad0bd;--lime:#f1bf59;--orange:#ef8c72;--shadow:0 18px 48px rgba(0,0,0,.2)}
+  html[data-theme=dark] body{background:linear-gradient(145deg,#142829,#1b3535 58%,#273b3a);color:var(--ink)}
+  html[data-theme=dark] .panel,html[data-theme=dark] .stat,html[data-theme=dark] .profile-dialog,html[data-theme=dark] .receipt-dialog{background:#203a3b;border-color:#385653}
+  html[data-theme=dark] .mark{background:#277f77;color:#fff3d4}
+  html[data-theme=dark] .view-tabs .view-tab.active{background:#277f77;color:#fff}
+  html[data-theme=dark] .primary:hover{background:#1a625e}
+  @keyframes dashboard-enter{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:translateY(0)}}
+  @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
+</style>
 </body></html>

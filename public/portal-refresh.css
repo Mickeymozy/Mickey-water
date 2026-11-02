@@ -1,37 +1,37 @@
 :root{
-  --ink:#17324a;
-  --muted:#607688;
-  --paper:#f1f6f8;
-  --white:#ffffff;
-  --line:#d6e2e8;
-  --teal:#087f86;
-  --teal-dark:#075d69;
-  --lime:#b8e3d1;
-  --orange:#c75b42;
-  --shadow:0 12px 32px rgba(23,50,74,.08);
+  --ink:#183234;
+  --muted:#667c79;
+  --paper:#eff6f3;
+  --white:#fffefa;
+  --line:#d5e2dd;
+  --teal:#197b78;
+  --teal-dark:#145b5a;
+  --lime:#f1bf59;
+  --orange:#d66b56;
+  --shadow:0 16px 42px rgba(24,50,52,.09);
 }
 html[data-theme=dark]{
-  --ink:#e7f1f6;
-  --muted:#a3b8c5;
-  --paper:#101d28;
-  --white:#172938;
-  --line:#2b4353;
-  --teal:#3bb6b0;
-  --teal-dark:#8bd5cf;
-  --lime:#244a45;
-  --orange:#f18a72;
-  --shadow:0 16px 38px rgba(0,0,0,.2);
+  --ink:#e7f1ed;
+  --muted:#aec2bb;
+  --paper:#142829;
+  --white:#203a3b;
+  --line:#385653;
+  --teal:#62b7a7;
+  --teal-dark:#8ad0bd;
+  --lime:#f1bf59;
+  --orange:#ef8c72;
+  --shadow:0 18px 48px rgba(0,0,0,.2);
 }
 html body{
-  background:linear-gradient(145deg,#edf5f8,#f7fafb 58%,#e6f0f3);
+  background:linear-gradient(145deg,#e9f4f1 0%,#f5f7f2 58%,#f8f0e9 100%);
   color:var(--ink);
   font-family:"Plus Jakarta Sans","Trebuchet MS",Verdana,sans-serif;
 }
-html[data-theme=dark] body{background:linear-gradient(145deg,#101d28,#142737 62%,#0d1923)}
+html[data-theme=dark] body{background:linear-gradient(145deg,#142829,#1b3535 58%,#273b3a)}
 html body .shell{max-width:1280px;padding:26px clamp(16px,3vw,38px) 64px}
 html body .topbar{margin-bottom:38px;padding:0 0 18px;border-bottom:1px solid var(--line)}
 html body .brand{font-family:"Plus Jakarta Sans","Trebuchet MS",Verdana,sans-serif;font-size:1.04rem;letter-spacing:0}
-html body .brand .mark{border-radius:11px;background:var(--teal-dark);color:#fff;box-shadow:4px 4px 0 #b8e3d1}
+html body .brand .mark{border-radius:11px;background:var(--teal-dark);color:#fff;box-shadow:4px 4px 0 rgba(241,191,89,.72)}
 html body .hero{grid-template-columns:minmax(0,1.3fr) minmax(240px,.7fr);gap:38px;margin-bottom:30px}
 html body .hero h1{max-width:650px;font:700 3.3rem/1.04 "Plus Jakarta Sans","Trebuchet MS",Verdana,sans-serif;letter-spacing:0;color:var(--ink)}
 html body .hero p{font:400 .94rem/1.65 "Plus Jakarta Sans","Trebuchet MS",Verdana,sans-serif;color:var(--muted)}
@@ -211,3 +211,18 @@ html[data-theme=dark] body .tabs,html[data-theme=dark] body .field input,html[da
   html body .csv-form .button{width:100%}
 }
 @media(max-width:520px){html body .main h1{font-size:2.25rem}html body .box{padding:20px}html body .actions{flex-wrap:wrap}}
+html body .main,html body .auth-page{animation:app-enter .48s ease both}
+html body .box,html body .auth-panel{animation:app-enter .4s .08s ease both}
+html body .top{animation:app-enter .36s ease both}
+html body .stat,html body .panel{animation:app-enter .42s ease both}
+html body .stats .stat:nth-child(2){animation-delay:.06s}
+html body .stats .stat:nth-child(3){animation-delay:.12s}
+html body .stats .stat:nth-child(4){animation-delay:.18s}
+html body .health-panel{animation-delay:.12s}
+html body .csv-panel{animation-delay:.18s}
+html body .management-panel,html body .admin-receipts-panel{animation-delay:.24s}
+html body .submit,html body .button.primary{background:var(--teal)}
+html body .submit:hover,html body .button.primary:hover{background:var(--teal-dark)}
+html :focus-visible{outline-color:rgba(214,107,86,.4)}
+@keyframes app-enter{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@media(prefers-reduced-motion:reduce){html body .main,html body .auth-page,html body .box,html body .auth-panel,html body .top,html body .stat,html body .panel{animation:none}}
