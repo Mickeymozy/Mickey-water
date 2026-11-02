@@ -1,6 +1,13 @@
 (() => {
   const isAdmin = user.role === 'admin';
   document.body.classList.add('portal-dashboard');
+  const stats = document.querySelector('.stats');
+  if (stats && !document.getElementById('totalValue')) {
+    const totalValueStat = document.createElement('div');
+    totalValueStat.className = 'stat';
+    totalValueStat.innerHTML = '<small>Jumla ya thamani</small><strong id="totalValue">TZS 0</strong>';
+    stats.append(totalValueStat);
+  }
   const overview = document.createElement('section');
   overview.className = 'dashboard-overview';
   overview.setAttribute('aria-label', 'Muhtasari wa bili na matumizi');
@@ -92,4 +99,5 @@
   };
   renderOverview();
   organizeActions();
+  render();
 })();
