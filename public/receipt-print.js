@@ -46,19 +46,26 @@
     </article>`;
   }
 
-  function printReceipts(items, title = 'Risiti za malipo') {
+  function printReceipts(items, title = 'Risiti za malipo', options = {}) {
+    const requestedPerPage = Number(options.perPage || 6);
+    const receiptsPerA4Page = Number.isInteger(requestedPerPage) ? Math.min(7, Math.max(3, requestedPerPage)) : 6;
+    const maxA4Pages = 3;
     const receiptItems = items.filter(item => item?.record || item?.blank);
-    if (!receiptItems.length || receiptItems.length > 9) return false;
+    if (!receiptItems.length || receiptItems.length > receiptsPerA4Page * maxA4Pages) return false;
     const popup = window.open('', '_blank');
     if (!popup) return false;
-    const pages = Array.from({ length: Math.ceil(receiptItems.length / 3) }, (_, pageIndex) => {
-      const slips = receiptItems.slice(pageIndex * 3, pageIndex * 3 + 3).map(item => receiptMarkup(item.blank ? { blank: true } : item.record)).join('');
-      return `<section class="mw-page">${slips}</section>`;
+    const pages = Array.from({ length: Math.ceil(receiptItems.length / receiptsPerA4Page) }, (_, pageIndex) => {
+      const start = pageIndex * receiptsPerA4Page;
+      const pageItems = receiptItems.slice(start, start + receiptsPerA4Page);
+      const columns = pageItems.length <= 3 ? 1 : 2;
+      const rows = Math.ceil(pageItems.length / columns);
+      const slips = pageItems.map(item => receiptMarkup(item.blank ? { blank: true } : item.record)).join('');
+      return `<section class="mw-page${pageItems.length > 3 ? ' mw-page-compact' : ''}" style="grid-template-columns:repeat(${columns},minmax(0,1fr));grid-template-rows:repeat(${rows},minmax(0,1fr))">${slips}</section>`;
     }).join('');
     popup.document.open();
     popup.document.write(`<!doctype html><html lang="sw"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(title)}</title><style>
       *{box-sizing:border-box}body{margin:0;color:#17221f;font:10px/1.35 Arial,sans-serif}.mw-receipt{padding:4mm 4mm 3mm;border:1px dashed #89958f;break-inside:avoid;page-break-inside:avoid}.mw-receipt-head{display:flex;align-items:center;gap:6px;padding-bottom:2mm;border-bottom:1px solid #d6dfd9}.mw-receipt-mark{display:grid;place-items:center;width:25px;height:25px;background:#087f73;color:#fff;font-size:9px;font-weight:700;border-radius:5px}.mw-receipt-head strong,.mw-receipt-head small{display:block}.mw-receipt-head strong{font:700 12px Georgia,serif}.mw-receipt-head small{margin-top:1px;color:#087f73;font-size:7px;font-weight:700;letter-spacing:.6px}.mw-receipt-meta{display:grid;grid-template-columns:1fr auto;gap:2px 6px;padding:2mm 0;color:#627772;font-size:8px}.mw-receipt-meta strong{max-width:42mm;color:#17221f;text-align:right;overflow-wrap:anywhere}.mw-receipt-customer{padding:1mm 0 2mm}.mw-receipt-customer small,.mw-receipt-customer strong,.mw-receipt-customer span{display:block}.mw-receipt-customer small{color:#627772;font-size:7px;font-weight:700;letter-spacing:.7px}.mw-receipt-customer strong{margin:1px 0;font:700 11px Georgia,serif;overflow-wrap:anywhere}.mw-receipt-customer span{color:#627772;font-size:8px}.mw-receipt-status{margin:1mm 0;padding:1.5mm 2mm;border-radius:3px;font-size:8px;font-weight:700;text-align:center}.mw-receipt-status.paid{background:#e5f3e9;color:#23704a}.mw-receipt-status.partial{background:#fff3d4;color:#946b00}.mw-receipt-status.unpaid{background:#fff0e9;color:#b64226}.mw-payment-list{padding:1mm 0;border-top:1px solid #d6dfd9;font-size:7px}.mw-payment-list>strong{display:block;padding:1mm 0;color:#627772}.mw-payment-row{display:flex;justify-content:space-between;gap:4px;padding:.5mm 0}.mw-payment-row span{overflow-wrap:anywhere}.mw-payment-row strong{white-space:nowrap}.mw-receipt-foot{margin-top:1mm;padding-top:1.5mm;border-top:1px solid #d6dfd9;color:#627772;font-size:7px}.mw-cut-marker{height:5mm;display:flex;align-items:center;gap:5px;color:#687873;font-size:6px;letter-spacing:.6px}.mw-cut-marker:before,.mw-cut-marker:after{content:"";flex:1;border-top:1px dashed #89958f}@page{size:80mm 297mm;margin:3mm}@media screen{body{max-width:440px;margin:20px auto;padding:0 12px}.mw-receipt{margin-bottom:4mm}.mw-cut-marker{height:8mm}}
-      </style></head><body><main>${pages}</main>`);
+      </style><style>.mw-page-compact .mw-receipt{padding:2mm}.mw-page-compact .mw-receipt-head{gap:4px;padding-bottom:1mm}.mw-page-compact .mw-receipt-mark{width:6mm;height:6mm;font-size:7px}.mw-page-compact .mw-receipt-head strong{font-size:9px}.mw-page-compact .mw-receipt-head small{font-size:6px}.mw-page-compact .mw-receipt-meta{gap:1px 4px;padding:1mm 0;font-size:6px}.mw-page-compact .mw-receipt-meta strong{max-width:38mm}.mw-page-compact .mw-receipt-customer{padding:.5mm 0 1mm}.mw-page-compact .mw-receipt-customer small,.mw-page-compact .mw-receipt-customer span{font-size:6px}.mw-page-compact .mw-receipt-customer strong{font-size:8px}.mw-page-compact .mw-receipt-status{margin:.5mm 0;padding:1mm;font-size:6px}.mw-page-compact .mw-payment-list{display:none}.mw-page-compact .mw-receipt-foot{margin-top:.5mm;padding-top:.5mm;font-size:6px}.mw-page-compact .mw-blank-customer,.mw-page-compact .mw-blank-readings,.mw-page-compact .mw-blank-totals{gap:1mm;padding:1.5mm 0}.mw-page-compact .mw-blank-customer small,.mw-page-compact .mw-blank-readings small,.mw-page-compact .mw-blank-totals small{font-size:6px}.mw-page-compact .mw-blank-customer span{height:5mm}.mw-page-compact .mw-blank-readings span{height:6mm}.mw-page-compact .mw-blank-totals span{height:5mm}.mw-page-compact .mw-blank-signature{gap:8mm;margin-top:2mm;font-size:6px}.mw-page-compact .mw-blank-signature span{padding-top:1mm}</style></head><body><main>${pages}</main>`);
     popup.document.write(`<style>@page{size:A4 portrait;margin:8mm}.mw-page{height:281mm;display:grid;grid-template-rows:repeat(3,minmax(0,1fr));gap:3mm;break-after:page;page-break-after:always}.mw-page:last-child{break-after:auto;page-break-after:auto}.mw-receipt{min-height:0;overflow:hidden;padding:4mm}.mw-receipt-head{gap:7px}.mw-receipt-mark{flex:0 0 9mm;height:9mm}.mw-receipt-head>b{margin-left:auto;font-size:8px}.mw-blank-customer,.mw-blank-readings,.mw-blank-totals{display:grid;gap:3mm;padding:4mm 0}.mw-blank-customer{grid-template-columns:1.5fr 1fr}.mw-blank-readings{grid-template-columns:repeat(3,1fr);border-top:1px solid #d6dfd9;border-bottom:1px solid #d6dfd9}.mw-blank-totals{grid-template-columns:repeat(3,1fr)}.mw-blank-customer>div,.mw-blank-readings>div,.mw-blank-totals>div{min-width:0}.mw-blank-customer small,.mw-blank-readings small,.mw-blank-totals small{display:block;color:#627772;font-size:7px;font-weight:700}.mw-blank-customer span,.mw-blank-readings span,.mw-blank-totals span{display:block;height:8mm;margin-top:1mm;border-bottom:1px solid #697a73}.mw-blank-readings span{height:11mm}.mw-blank-signature{display:flex;justify-content:space-between;gap:15mm;margin-top:6mm;color:#627772;font-size:7px}.mw-blank-signature span{width:44%;padding-top:2mm;border-top:1px solid #697a73}</style></body></html>`);
     popup.onload = () => setTimeout(() => { popup.focus(); popup.print(); }, 150);
     popup.document.close();
@@ -74,7 +81,7 @@
     previewModal.innerHTML = '<section class="mw-preview-dialog" role="dialog" aria-modal="true" aria-labelledby="mwPreviewTitle"><header class="mw-preview-toolbar"><h2 id="mwPreviewTitle">Preview ya risiti</h2><div><button type="button" class="mw-preview-print" data-preview-print>Chapisha</button><button type="button" class="mw-preview-close" data-preview-close aria-label="Funga">Funga</button></div></header><div class="mw-preview-content"></div></section>';
     previewModal.addEventListener('click', event => {
       if (event.target === previewModal || event.target.closest('[data-preview-close]')) previewModal.classList.remove('show');
-      if (event.target.closest('[data-preview-print]') && activeReceipt) printReceipts([activeReceipt], 'Risiti ya malipo');
+      if (event.target.closest('[data-preview-print]') && activeReceipt) printReceipts([activeReceipt], 'Risiti ya malipo', activeReceipt.options);
     });
     document.addEventListener('keydown', event => {
       if (event.key === 'Escape') previewModal.classList.remove('show');
@@ -87,9 +94,9 @@
     return previewModal;
   }
 
-  function preview(record, payment) {
+  function preview(record, payment, options = {}) {
     if (!record) return false;
-    activeReceipt = { record, payment };
+    activeReceipt = { record, payment, options };
     const modal = ensurePreviewModal();
     modal.querySelector('.mw-preview-content').innerHTML = receiptMarkup(record);
     modal.classList.add('show');

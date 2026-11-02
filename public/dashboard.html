@@ -171,6 +171,15 @@ const originalTemplateMessageSender=sendMessage;sendMessage=function(record,text
   const receiptsPanel = document.createElement('section');
   receiptsPanel.className = 'dashboard-receipts-panel activity-view';
   receiptsPanel.innerHTML = '<div class="panel-head"><div><h2>Risiti za malipo</h2><p>Preview na uchapishe malipo yaliyothibitishwa.</p></div><div class="receipt-print-actions"><button class="primary" type="button" id="printVisibleReceipts">Chapisha zinazoonekana</button><label for="blankReceiptCount">Risiti tupu</label><input id="blankReceiptCount" type="number" min="1" max="9" value="3" aria-label="Idadi ya risiti tupu"><button class="action" type="button" id="printBlankReceipts">Chapisha tupu</button></div></div><div class="dashboard-receipt-filters"><input id="receiptSearch" type="search" placeholder="Tafuta risiti, invoice au mteja"><input id="receiptMonth" type="month" aria-label="Chuja risiti kwa mwezi"></div><p class="dashboard-receipt-count" id="receiptCount">0 risiti</p><div class="dashboard-receipt-scroll"><table class="dashboard-receipt-table"><thead><tr><th>Risiti</th><th>Mteja / invoice</th><th>Tarehe</th><th>Kiasi</th><th>Salio</th><th>Vitendo</th></tr></thead><tbody id="receiptRows"><tr><td colspan="6" class="empty">Inapakia risiti...</td></tr></tbody></table></div>';
+  const receiptPageControl = document.createElement('label');
+  receiptPageControl.className = 'receipt-page-control';
+  receiptPageControl.htmlFor = 'receiptPerPage';
+  receiptPageControl.innerHTML = '<span>Risiti kwa A4</span><select id="receiptPerPage" aria-label="Idadi ya risiti kwa karatasi ya A4"><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6" selected>6</option><option value="7">7</option></select>';
+  receiptsPanel.querySelector('.receipt-print-actions').prepend(receiptPageControl);
+  const blankReceiptCount = receiptsPanel.querySelector('#blankReceiptCount');
+  blankReceiptCount.max = '18';
+  blankReceiptCount.value = '6';
+  blankReceiptCount.step = '1';
   recordsTable.className = 'all-records-panel activity-view active';
   const activityPanel = document.createElement('section');
   activityPanel.className = 'panel activity-panel';
@@ -523,6 +532,22 @@ const dashboardSmsModeControl=$('smsMode');if(dashboardSmsModeControl){dashboard
   const receiptPrintControlStyle = document.createElement('style');
   receiptPrintControlStyle.textContent = '.receipt-print-actions{display:flex;align-items:center;justify-content:flex-end;gap:7px;flex-wrap:wrap}.receipt-print-actions label{color:var(--muted);font:700 .68rem Arial,sans-serif}.receipt-print-actions input{width:58px;min-height:40px;padding:8px;border:1px solid var(--line);border-radius:6px;background:var(--white);color:var(--ink)}.receipt-print-actions .action,.receipt-print-actions .primary{min-height:40px;padding:9px 11px}.all-records-panel .utility-bar{margin:0 0 14px;padding:0;border:0;background:transparent}html[data-theme=dark] .receipt-print-actions input{background:#102323;color:#eff7f1;border-color:#355653}@media(max-width:700px){.receipt-print-actions{justify-content:flex-start}.dashboard-receipts-panel .panel-head{gap:12px}.receipt-print-actions>*{flex:0 0 auto}}';
   document.head.append(receiptPrintControlStyle);
+  const receiptPageSelectStyle = document.createElement('style');
+  receiptPageSelectStyle.textContent = '.receipt-page-control{display:flex;align-items:center;gap:6px}.receipt-page-control select{width:62px;min-height:40px;padding:7px;border:1px solid var(--line);border-radius:6px;background:var(--white);color:var(--ink);font:700 .78rem Arial,sans-serif}html[data-theme=dark] .receipt-page-control select{background:#102323;color:#eff7f1;border-color:#355653}';
+  document.head.append(receiptPageSelectStyle);
+  const receiptPerPage = document.getElementById('receiptPerPage');
+  receiptPerPage.value = localStorage.getItem('mickey_receipts_per_page') || '6';
+  const maxReceiptBatch = () => Number(receiptPerPage.value) * 3;
+  const updateBlankReceiptLimit = () => {
+    blankReceiptCount.max = String(maxReceiptBatch());
+    if (Number(blankReceiptCount.value) > maxReceiptBatch()) blankReceiptCount.value = String(maxReceiptBatch());
+  };
+  updateBlankReceiptLimit();
+  receiptPerPage.addEventListener('change', () => {
+    localStorage.setItem('mickey_receipts_per_page', receiptPerPage.value);
+    updateBlankReceiptLimit();
+  });
+  const receiptPrintOptions = () => ({ perPage: Number(receiptPerPage.value) });
   let selectedReceiptStatus = 'all';
   const receiptRecords = () => [...state.records].sort((left, right) => new Date(right.date) - new Date(left.date)).map(record => ({ record }));
   const filteredReceipts = () => {
@@ -560,21 +585,21 @@ const dashboardSmsModeControl=$('smsMode');if(dashboardSmsModeControl){dashboard
     if (previewButton || printButton) {
       const button = previewButton || printButton;
       const record = state.records.find(item => item._id === button.dataset.receiptPreview || item._id === button.dataset.receiptPrint);
-      if (previewButton) window.MickeyReceiptPrint.preview(record);
-      else if (!window.MickeyReceiptPrint.print([{ record }], 'Taarifa ya bili')) toast('Ruhusu dirisha la kuchapisha lifunguke.');
+      if (previewButton) window.MickeyReceiptPrint.preview(record, null, receiptPrintOptions());
+      else if (!window.MickeyReceiptPrint.print([{ record }], 'Taarifa ya bili', receiptPrintOptions())) toast('Ruhusu dirisha la kuchapisha lifunguke.');
       return;
     }
   });
   document.getElementById('printVisibleReceipts').addEventListener('click', event => {
     event.stopPropagation();
     const receipts = filteredReceipts();
-    if (receipts.length > 9) return toast('Print inaruhusu risiti 9 tu (kurasa 3). Chuja orodha kwanza.');
-    if (!window.MickeyReceiptPrint.print(receipts, 'Bili zinazoonekana')) toast('Hakuna bili za kuchapisha au dirisha limezuiwa.');
+    if (receipts.length > maxReceiptBatch()) return toast(`Chagua hadi risiti ${maxReceiptBatch()} kwa print (karatasi 3). Chuja orodha kwanza.`);
+    if (!window.MickeyReceiptPrint.print(receipts, 'Bili zinazoonekana', receiptPrintOptions())) toast('Hakuna bili za kuchapisha au dirisha limezuiwa.');
   });
   document.getElementById('printBlankReceipts').addEventListener('click', () => {
     const quantity = Number(document.getElementById('blankReceiptCount').value);
-    if (!Number.isInteger(quantity) || quantity < 1 || quantity > 9) return toast('Chagua risiti 1 hadi 9 (kurasa zisizozidi 3).');
-    if (!window.MickeyReceiptPrint.print(Array.from({ length: quantity }, () => ({ blank: true })), 'Risiti tupu za kujaza')) toast('Ruhusu dirisha la kuchapisha lifunguke.');
+    if (!Number.isInteger(quantity) || quantity < 1 || quantity > maxReceiptBatch()) return toast(`Chagua risiti 1 hadi ${maxReceiptBatch()} (karatasi zisizozidi 3).`);
+    if (!window.MickeyReceiptPrint.print(Array.from({ length: quantity }, () => ({ blank: true })), 'Risiti tupu za kujaza', receiptPrintOptions())) toast('Ruhusu dirisha la kuchapisha lifunguke.');
   });
   const previousLoad = load;
   load = async function() { await previousLoad(); renderReceipts(); };
