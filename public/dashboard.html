@@ -170,8 +170,9 @@ const originalTemplateMessageSender=sendMessage;sendMessage=function(record,text
   const views = document.querySelector('.view-tabs');
   const receiptsPanel = document.createElement('section');
   receiptsPanel.className = 'panel dashboard-receipts-panel';
-  receiptsPanel.innerHTML = '<div class="panel-head"><div><h2>Risiti za malipo</h2><p>Preview na uchapishe malipo yaliyothibitishwa.</p></div><button class="primary" type="button" id="printVisibleReceipts">Chapisha zinazoonekana</button></div><div class="dashboard-receipt-filters"><input id="receiptSearch" type="search" placeholder="Tafuta risiti, invoice au mteja"><input id="receiptMonth" type="month" aria-label="Chuja risiti kwa mwezi"></div><p class="dashboard-receipt-count" id="receiptCount">0 risiti</p><div class="dashboard-receipt-scroll"><table class="dashboard-receipt-table"><thead><tr><th>Risiti</th><th>Mteja / invoice</th><th>Tarehe</th><th>Kiasi</th><th>Salio</th><th>Vitendo</th></tr></thead><tbody id="receiptRows"><tr><td colspan="6" class="empty">Inapakia risiti...</td></tr></tbody></table></div>';
+  receiptsPanel.innerHTML = '<div class="panel-head"><div><h2>Risiti za malipo</h2><p>Preview na uchapishe malipo yaliyothibitishwa.</p></div><div class="receipt-print-actions"><button class="primary" type="button" id="printVisibleReceipts">Chapisha zinazoonekana</button><label for="blankReceiptCount">Risiti tupu</label><input id="blankReceiptCount" type="number" min="1" max="9" value="3" aria-label="Idadi ya risiti tupu"><button class="action" type="button" id="printBlankReceipts">Chapisha tupu</button></div></div><div class="dashboard-receipt-filters"><input id="receiptSearch" type="search" placeholder="Tafuta risiti, invoice au mteja"><input id="receiptMonth" type="month" aria-label="Chuja risiti kwa mwezi"></div><p class="dashboard-receipt-count" id="receiptCount">0 risiti</p><div class="dashboard-receipt-scroll"><table class="dashboard-receipt-table"><thead><tr><th>Risiti</th><th>Mteja / invoice</th><th>Tarehe</th><th>Kiasi</th><th>Salio</th><th>Vitendo</th></tr></thead><tbody id="receiptRows"><tr><td colspan="6" class="empty">Inapakia risiti...</td></tr></tbody></table></div>';
   workspace.append(recordsTable, receiptsPanel);
+  recordsTable.prepend(utilityBar);
 
   const tableStyle = document.createElement('style');
   tableStyle.textContent = '.all-records-panel{display:block!important}.all-records-filters{display:grid;grid-template-columns:minmax(200px,1.4fr) minmax(180px,1fr) 170px 170px;gap:9px;margin:16px 0}.all-records-filters input,.all-records-filters select{min-width:0;min-height:42px;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--white);color:var(--ink);font:.82rem Arial,sans-serif}.all-records-summary{display:flex;gap:22px;flex-wrap:wrap;padding:11px 0;color:var(--muted);font:.74rem Arial,sans-serif}.all-records-summary strong{color:var(--ink)}.all-records-scroll{max-width:100%;overflow:auto}.all-records-table{width:100%;min-width:1120px;border-collapse:collapse;font:.74rem Arial,sans-serif}.all-records-table th,.all-records-table td{padding:11px 9px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}.all-records-table th{position:sticky;top:0;background:var(--white);color:var(--muted);font-size:.63rem;text-transform:uppercase;letter-spacing:.04em}.all-records-table tbody tr:hover{background:rgba(23,107,135,.045)}.all-records-table td:first-child button{max-width:190px;overflow:hidden;text-overflow:ellipsis}.table-customer-name{border:0;background:none;padding:0;color:var(--teal);font:700 .78rem Arial,sans-serif;text-align:left;cursor:pointer}.table-customer-name:hover{text-decoration:underline}.all-records-table .details-action{border:1px solid var(--line);border-radius:6px;background:var(--white);padding:7px 9px;color:var(--teal);font:700 .68rem Arial,sans-serif;cursor:pointer}html[data-theme=dark] .all-records-filters input,html[data-theme=dark] .all-records-filters select,html[data-theme=dark] .all-records-table th,html[data-theme=dark] .all-records-table .details-action{background:#142626;color:#eff7f1;border-color:#355653}html[data-theme=dark] .all-records-table tbody tr:hover{background:rgba(70,130,120,.13)}html[data-theme=dark] .all-records-summary strong{color:#eff7f1}@media(max-width:820px){.all-records-filters{grid-template-columns:1fr 1fr}.all-records-filters input[type=search]{grid-column:1/-1}}@media(max-width:520px){.all-records-filters{grid-template-columns:1fr}.all-records-filters input[type=search]{grid-column:auto}.all-records-summary{gap:12px;flex-direction:column}}';
@@ -181,7 +182,7 @@ const originalTemplateMessageSender=sendMessage;sendMessage=function(record,text
   const allRecordsTab = document.createElement('button');
   allRecordsTab.type = 'button';
   allRecordsTab.className = 'view-tab';
-  allRecordsTab.textContent = 'Records';
+  allRecordsTab.textContent = 'Historia';
   views.append(allRecordsTab);
   const receiptsTab = document.createElement('button');
   receiptsTab.type = 'button';
@@ -191,7 +192,7 @@ const originalTemplateMessageSender=sendMessage;sendMessage=function(record,text
 
   const tabEntries = [
     { button: billTab, panel: billPanel, available: isAdmin },
-    { button: historyTab, panel: historyPanel, available: isAdmin },
+    { button: historyTab, panel: historyPanel, available: false },
     { button: monthlyTab, panel: monthlyPanel, available: false },
     { button: monthlyCustomerTab, panel: monthlyCustomerPanel, available: true },
     { button: allRecordsTab, panel: recordsTable, available: true },
@@ -426,6 +427,9 @@ const dashboardSmsModeControl=$('smsMode');if(dashboardSmsModeControl){dashboard
   const receiptStyle = document.createElement('style');
   receiptStyle.textContent = '.receipt-status-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:15px 0 10px;padding:5px;border:1px solid var(--line);border-radius:8px;background:rgba(255,255,255,.55)}.receipt-status-tabs .filter{min-height:36px;padding:8px 12px;border:0;border-radius:6px;background:transparent;color:var(--muted);font:700 .7rem "Trebuchet MS",Verdana,sans-serif}.receipt-status-tabs .filter.active{background:var(--teal);color:#fff}.dashboard-receipt-filters{display:grid;grid-template-columns:minmax(220px,1fr) 190px;gap:9px;margin:14px 0}.dashboard-receipt-filters input{min-width:0;min-height:42px;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--white);color:var(--ink);font: .82rem Arial,sans-serif}.dashboard-receipt-count{color:var(--muted);font:700 .75rem Arial,sans-serif}.dashboard-receipt-scroll{max-width:100%;overflow:auto}.dashboard-receipt-table{width:100%;min-width:820px;border-collapse:collapse;font:.76rem Arial,sans-serif}.dashboard-receipt-table th,.dashboard-receipt-table td{padding:11px 9px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}.dashboard-receipt-table th{color:var(--muted);font-size:.64rem;text-transform:uppercase}.dashboard-receipt-table td small{display:block;margin-top:3px;color:var(--muted)}.dashboard-receipt-table td:last-child{display:flex;gap:6px}html[data-theme=dark] .receipt-status-tabs{background:#142626;border-color:#355653}html[data-theme=dark] .dashboard-receipt-filters input{background:#102323;color:#eff7f1;border-color:#355653}@media(max-width:620px){.receipt-status-tabs{gap:4px}.receipt-status-tabs .filter{flex:1 1 42%;padding:7px}.dashboard-receipt-filters{grid-template-columns:1fr}.dashboard-receipts-panel .panel-head{align-items:flex-start;flex-direction:column}.dashboard-receipt-table td:last-child{white-space:normal}}';
   document.head.append(receiptStyle);
+  const receiptPrintControlStyle = document.createElement('style');
+  receiptPrintControlStyle.textContent = '.receipt-print-actions{display:flex;align-items:center;justify-content:flex-end;gap:7px;flex-wrap:wrap}.receipt-print-actions label{color:var(--muted);font:700 .68rem Arial,sans-serif}.receipt-print-actions input{width:58px;min-height:40px;padding:8px;border:1px solid var(--line);border-radius:6px;background:var(--white);color:var(--ink)}.receipt-print-actions .action,.receipt-print-actions .primary{min-height:40px;padding:9px 11px}.all-records-panel .utility-bar{margin:0 0 14px;padding:0;border:0;background:transparent}html[data-theme=dark] .receipt-print-actions input{background:#102323;color:#eff7f1;border-color:#355653}@media(max-width:700px){.receipt-print-actions{justify-content:flex-start}.dashboard-receipts-panel .panel-head{gap:12px}.receipt-print-actions>*{flex:0 0 auto}}';
+  document.head.append(receiptPrintControlStyle);
   let selectedReceiptStatus = 'all';
   const receiptRecords = () => [...state.records].sort((left, right) => new Date(right.date) - new Date(left.date)).map(record => ({ record }));
   const filteredReceipts = () => {
@@ -471,7 +475,13 @@ const dashboardSmsModeControl=$('smsMode');if(dashboardSmsModeControl){dashboard
   document.getElementById('printVisibleReceipts').addEventListener('click', event => {
     event.stopPropagation();
     const receipts = filteredReceipts();
+    if (receipts.length > 9) return toast('Print inaruhusu risiti 9 tu (kurasa 3). Chuja orodha kwanza.');
     if (!window.MickeyReceiptPrint.print(receipts, 'Bili zinazoonekana')) toast('Hakuna bili za kuchapisha au dirisha limezuiwa.');
+  });
+  document.getElementById('printBlankReceipts').addEventListener('click', () => {
+    const quantity = Number(document.getElementById('blankReceiptCount').value);
+    if (!Number.isInteger(quantity) || quantity < 1 || quantity > 9) return toast('Chagua risiti 1 hadi 9 (kurasa zisizozidi 3).');
+    if (!window.MickeyReceiptPrint.print(Array.from({ length: quantity }, () => ({ blank: true })), 'Risiti tupu za kujaza')) toast('Ruhusu dirisha la kuchapisha lifunguke.');
   });
   const previousLoad = load;
   load = async function() { await previousLoad(); renderReceipts(); };

@@ -127,7 +127,9 @@ const adminSmsModeControl=document.createElement('label');adminSmsModeControl.cl
     else if (!window.MickeyReceiptPrint.print([{ record }], 'Taarifa ya bili')) managementMessage('Ruhusu dirisha la kuchapisha lifunguke.');
   });
   document.getElementById('printAllReceipts').addEventListener('click', () => {
-    if (!window.MickeyReceiptPrint.print(allReceiptRecords(), 'Records zote na salio')) managementMessage('Hakuna bili za kuchapisha au dirisha limezuiwa.');
+    const receipts = allReceiptRecords();
+    if (receipts.length > 9) return managementMessage('Print inaruhusu risiti 9 tu (kurasa 3). Chuja orodha kwanza.');
+    if (!window.MickeyReceiptPrint.print(receipts, 'Records zote na salio')) managementMessage('Hakuna bili za kuchapisha au dirisha limezuiwa.');
   });
   const previousBillDataLoad = loadAdminBillData;
   loadAdminBillData = async function() { await previousBillDataLoad(); renderReceipts(); };

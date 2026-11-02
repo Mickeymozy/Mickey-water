@@ -16,6 +16,15 @@
     .reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
 
   function receiptMarkup(record) {
+    if (record?.blank) {
+      return `<article class="mw-receipt mw-receipt-blank">
+        <header class="mw-receipt-head"><span class="mw-receipt-mark">MW</span><div><strong>Mickey Water</strong><small>RISITI YA MAJI · YA KUJAZA</small></div><b>Namba: __________</b></header>
+        <div class="mw-blank-customer"><div><small>JINA LA MTEJA</small><span></span></div><div><small>SIMU</small><span></span></div></div>
+        <div class="mw-blank-readings"><div><small>USOMAJI ULIOPITA</small><span></span></div><div><small>USOMAJI WA SASA</small><span></span></div><div><small>MATUMIZI (UNITS)</small><span></span></div></div>
+        <div class="mw-blank-totals"><div><small>BILI YA MWEZI</small><span></span></div><div><small>DENI LA NYUMA</small><span></span></div><div><small>JUMLA</small><span></span></div><div><small>KIASI KILICHOLIPWA</small><span></span></div><div><small>SALIO</small><span></span></div><div><small>TAREHE</small><span></span></div></div>
+        <footer class="mw-blank-signature"><span>Sahihi ya mpokeaji</span><span>Sahihi ya mtoaji</span></footer>
+      </article>`;
+    }
     const paid = approvedTotal(record);
     const total = Number(record.total || 0);
     const balance = Math.max(0, total - paid);
@@ -25,28 +34,32 @@
     const receiptNumber = `MW-${String(record._id || '').slice(-8).toUpperCase()}`;
     const payments = (record.payments || []).filter(payment => payment.status === 'approved').sort((left, right) => new Date(left.approvedAt || left.submittedAt) - new Date(right.approvedAt || right.submittedAt));
     const lastPaymentDate = payments[payments.length - 1]?.approvedAt || payments[payments.length - 1]?.submittedAt;
-    const paymentRows = payments.map(payment => `<div class="mw-payment-row"><span>${escapeHtml(formatDate(payment.approvedAt || payment.submittedAt))}${payment.reference ? ` · ${escapeHtml(payment.reference)}` : ''}</span><strong>${escapeHtml(money(payment.amount))}</strong></div>`).join('');
+    const paymentRows = payments.slice(-3).map(payment => `<div class="mw-payment-row"><span>${escapeHtml(formatDate(payment.approvedAt || payment.submittedAt))}${payment.reference ? ` · ${escapeHtml(payment.reference)}` : ''}</span><strong>${escapeHtml(money(payment.amount))}</strong></div>`).join('');
     return `<article class="mw-receipt">
       <header class="mw-receipt-head"><span class="mw-receipt-mark">MW</span><div><strong>Mickey Water</strong><small>TAARIFA YA BILI NA MALIPO</small></div></header>
-      <div class="mw-receipt-meta"><span>Namba ya risiti</span><strong>${escapeHtml(receiptNumber)}</strong><span>Invoice</span><strong>${escapeHtml(invoiceNumber)}</strong><span>Tarehe ya bili</span><strong>${escapeHtml(formatDate(record.date))}</strong><span>Usomaji uliopita</span><strong>${escapeHtml(record.prevReading ?? 0)} Units</strong><span>Usomaji wa sasa</span><strong>${escapeHtml(record.currReading ?? 0)} Units</strong></div>
+      <div class="mw-receipt-meta"><span>Namba ya risiti</span><strong>${escapeHtml(receiptNumber)}</strong><span>Invoice</span><strong>${escapeHtml(invoiceNumber)}</strong><span>Tarehe ya bili</span><strong>${escapeHtml(formatDate(record.date))}</strong><span>Usomaji uliopita</span><strong>${escapeHtml(record.prevReading ?? 0)} Units</strong><span>Usomaji wa sasa</span><strong>${escapeHtml(record.currReading ?? 0)} Units</strong><span>Matumizi</span><strong>${escapeHtml(record.units ?? Math.max(0, Number(record.currReading || 0) - Number(record.prevReading || 0)))} Units</strong></div>
       <div class="mw-receipt-customer"><small>MTEJA</small><strong>${escapeHtml(record.customerName || 'Mteja')}</strong><span>${escapeHtml(record.phone || '')}</span></div>
       <div class="mw-receipt-status ${statusClass}">${escapeHtml(status)}</div>
       <div class="mw-receipt-meta"><span>Jumla ya bili</span><strong>${escapeHtml(money(total))}</strong><span>Imelipwa hadi sasa</span><strong>${escapeHtml(money(paid))}</strong><span>Salio linalodaiwa</span><strong>${escapeHtml(money(balance))}</strong><span>Malipo ya mwisho</span><strong>${escapeHtml(lastPaymentDate ? formatDate(lastPaymentDate) : '-')}</strong></div>
-      ${paymentRows ? `<section class="mw-payment-list"><strong>Historia ya malipo</strong>${paymentRows}</section>` : ''}
+      ${paymentRows ? `<section class="mw-payment-list"><strong>Malipo 3 ya mwisho</strong>${paymentRows}</section>` : ''}
       <footer class="mw-receipt-foot">${balance > 0 ? 'Salio hili bado halijalipwa.' : 'Bili hii imelipwa kikamilifu.'} · Asante, Mickey Water.</footer>
     </article>`;
   }
 
   function printReceipts(items, title = 'Risiti za malipo') {
-    const receiptItems = items.filter(item => item?.record);
-    if (!receiptItems.length) return false;
+    const receiptItems = items.filter(item => item?.record || item?.blank);
+    if (!receiptItems.length || receiptItems.length > 9) return false;
     const popup = window.open('', '_blank');
     if (!popup) return false;
-    const slips = receiptItems.map((item, index) => `${receiptMarkup(item.record)}${index < receiptItems.length - 1 ? '<div class="mw-cut-marker"><span>KATA HAPA</span></div>' : ''}`).join('');
+    const pages = Array.from({ length: Math.ceil(receiptItems.length / 3) }, (_, pageIndex) => {
+      const slips = receiptItems.slice(pageIndex * 3, pageIndex * 3 + 3).map(item => receiptMarkup(item.blank ? { blank: true } : item.record)).join('');
+      return `<section class="mw-page">${slips}</section>`;
+    }).join('');
     popup.document.open();
     popup.document.write(`<!doctype html><html lang="sw"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(title)}</title><style>
       *{box-sizing:border-box}body{margin:0;color:#17221f;font:10px/1.35 Arial,sans-serif}.mw-receipt{padding:4mm 4mm 3mm;border:1px dashed #89958f;break-inside:avoid;page-break-inside:avoid}.mw-receipt-head{display:flex;align-items:center;gap:6px;padding-bottom:2mm;border-bottom:1px solid #d6dfd9}.mw-receipt-mark{display:grid;place-items:center;width:25px;height:25px;background:#087f73;color:#fff;font-size:9px;font-weight:700;border-radius:5px}.mw-receipt-head strong,.mw-receipt-head small{display:block}.mw-receipt-head strong{font:700 12px Georgia,serif}.mw-receipt-head small{margin-top:1px;color:#087f73;font-size:7px;font-weight:700;letter-spacing:.6px}.mw-receipt-meta{display:grid;grid-template-columns:1fr auto;gap:2px 6px;padding:2mm 0;color:#627772;font-size:8px}.mw-receipt-meta strong{max-width:42mm;color:#17221f;text-align:right;overflow-wrap:anywhere}.mw-receipt-customer{padding:1mm 0 2mm}.mw-receipt-customer small,.mw-receipt-customer strong,.mw-receipt-customer span{display:block}.mw-receipt-customer small{color:#627772;font-size:7px;font-weight:700;letter-spacing:.7px}.mw-receipt-customer strong{margin:1px 0;font:700 11px Georgia,serif;overflow-wrap:anywhere}.mw-receipt-customer span{color:#627772;font-size:8px}.mw-receipt-status{margin:1mm 0;padding:1.5mm 2mm;border-radius:3px;font-size:8px;font-weight:700;text-align:center}.mw-receipt-status.paid{background:#e5f3e9;color:#23704a}.mw-receipt-status.partial{background:#fff3d4;color:#946b00}.mw-receipt-status.unpaid{background:#fff0e9;color:#b64226}.mw-payment-list{padding:1mm 0;border-top:1px solid #d6dfd9;font-size:7px}.mw-payment-list>strong{display:block;padding:1mm 0;color:#627772}.mw-payment-row{display:flex;justify-content:space-between;gap:4px;padding:.5mm 0}.mw-payment-row span{overflow-wrap:anywhere}.mw-payment-row strong{white-space:nowrap}.mw-receipt-foot{margin-top:1mm;padding-top:1.5mm;border-top:1px solid #d6dfd9;color:#627772;font-size:7px}.mw-cut-marker{height:5mm;display:flex;align-items:center;gap:5px;color:#687873;font-size:6px;letter-spacing:.6px}.mw-cut-marker:before,.mw-cut-marker:after{content:"";flex:1;border-top:1px dashed #89958f}@page{size:80mm 297mm;margin:3mm}@media screen{body{max-width:440px;margin:20px auto;padding:0 12px}.mw-receipt{margin-bottom:4mm}.mw-cut-marker{height:8mm}}
-      </style></head><body><main>${slips}</main></body></html>`);
+      </style></head><body><main>${pages}</main>`);
+    popup.document.write(`<style>@page{size:A4 portrait;margin:8mm}.mw-page{height:281mm;display:grid;grid-template-rows:repeat(3,minmax(0,1fr));gap:3mm;break-after:page;page-break-after:always}.mw-page:last-child{break-after:auto;page-break-after:auto}.mw-receipt{min-height:0;overflow:hidden;padding:4mm}.mw-receipt-head{gap:7px}.mw-receipt-mark{flex:0 0 9mm;height:9mm}.mw-receipt-head>b{margin-left:auto;font-size:8px}.mw-blank-customer,.mw-blank-readings,.mw-blank-totals{display:grid;gap:3mm;padding:4mm 0}.mw-blank-customer{grid-template-columns:1.5fr 1fr}.mw-blank-readings{grid-template-columns:repeat(3,1fr);border-top:1px solid #d6dfd9;border-bottom:1px solid #d6dfd9}.mw-blank-totals{grid-template-columns:repeat(3,1fr)}.mw-blank-customer>div,.mw-blank-readings>div,.mw-blank-totals>div{min-width:0}.mw-blank-customer small,.mw-blank-readings small,.mw-blank-totals small{display:block;color:#627772;font-size:7px;font-weight:700}.mw-blank-customer span,.mw-blank-readings span,.mw-blank-totals span{display:block;height:8mm;margin-top:1mm;border-bottom:1px solid #697a73}.mw-blank-readings span{height:11mm}.mw-blank-signature{display:flex;justify-content:space-between;gap:15mm;margin-top:6mm;color:#627772;font-size:7px}.mw-blank-signature span{width:44%;padding-top:2mm;border-top:1px solid #697a73}</style></body></html>`);
     popup.onload = () => setTimeout(() => { popup.focus(); popup.print(); }, 150);
     popup.document.close();
     return true;
