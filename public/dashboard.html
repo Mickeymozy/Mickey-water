@@ -594,7 +594,9 @@ const dashboardSmsModeControl=$('smsMode');if(dashboardSmsModeControl){dashboard
     event.stopPropagation();
     const receipts = filteredReceipts();
     if (receipts.length > maxReceiptBatch()) return toast(`Chagua hadi risiti ${maxReceiptBatch()} kwa print (karatasi 3). Chuja orodha kwanza.`);
-    if (!window.MickeyReceiptPrint.print(receipts, 'Bili zinazoonekana', receiptPrintOptions())) toast('Hakuna bili za kuchapisha au dirisha limezuiwa.');
+    const month = document.getElementById('receiptMonth').value;
+    const title = month ? `Risiti za ${new Date(`${month}-01T12:00:00`).toLocaleDateString('sw-TZ', { month: 'long', year: 'numeric' })}` : 'Risiti zinazoonekana';
+    if (!window.MickeyReceiptPrint.print(receipts, title, receiptPrintOptions())) toast('Hakuna risiti za kuchapisha au dirisha limezuiwa.');
   });
   document.getElementById('printBlankReceipts').addEventListener('click', () => {
     const quantity = Number(document.getElementById('blankReceiptCount').value);

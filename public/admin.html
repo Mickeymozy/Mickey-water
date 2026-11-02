@@ -107,13 +107,16 @@ const adminSmsModeControl=document.createElement('label');adminSmsModeControl.cl
     const paid = (record.payments || []).filter(payment => payment.status === 'approved').reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
     return paid >= Number(record.total || 0) ? { key: 'paid', label: 'Imelipwa', paid } : paid > 0 ? { key: 'partial', label: 'Imelipwa sehemu', paid } : { key: 'unpaid', label: 'Haijalipwa', paid };
   };
-  const renderReceipts = () => {
+  const filteredReceiptRecords = () => {
     const search = document.getElementById('adminReceiptSearch').value.trim().toLowerCase();
     const month = document.getElementById('adminReceiptMonth').value;
-    const visible = allReceiptRecords().filter(({ record }) => {
+    return allReceiptRecords().filter(({ record }) => {
       const searchText = `${record.customerName} ${record.phone} ${record.invoiceNumber || ''} ${record._id}`.toLowerCase();
       return searchText.includes(search) && (!month || String(record.date).slice(0, 7) === month) && (selectedReceiptStatus === 'all' || receiptStatus(record).key === selectedReceiptStatus);
     });
+  };
+  const renderReceipts = () => {
+    const visible = filteredReceiptRecords();
     document.getElementById('adminReceiptCount').textContent = `${visible.length} bili zinaonekana`;
     document.getElementById('adminReceiptRows').innerHTML = visible.length ? visible.map(({ record }) => {
       const status = receiptStatus(record);
@@ -139,10 +142,12 @@ const adminSmsModeControl=document.createElement('label');adminSmsModeControl.cl
     else if (!window.MickeyReceiptPrint.print([{ record }], 'Taarifa ya bili', adminReceiptPrintOptions())) managementMessage('Ruhusu dirisha la kuchapisha lifunguke.');
   });
   document.getElementById('printAllReceipts').addEventListener('click', () => {
-    const receipts = allReceiptRecords();
+    const receipts = filteredReceiptRecords();
     const maxReceipts = Number(adminReceiptPerPage.value) * 3;
     if (receipts.length > maxReceipts) return managementMessage(`Print inaruhusu risiti ${maxReceipts} (karatasi 3). Chuja orodha kwanza.`);
-    if (!window.MickeyReceiptPrint.print(receipts, 'Records zote na salio', adminReceiptPrintOptions())) managementMessage('Hakuna bili za kuchapisha au dirisha limezuiwa.');
+    const month = document.getElementById('adminReceiptMonth').value;
+    const title = month ? `Risiti za ${new Date(`${month}-01T12:00:00`).toLocaleDateString('sw-TZ', { month: 'long', year: 'numeric' })}` : 'Risiti za miezi yote';
+    if (!window.MickeyReceiptPrint.print(receipts, title, adminReceiptPrintOptions())) managementMessage('Hakuna risiti za kuchapisha au dirisha limezuiwa.');
   });
   const previousBillDataLoad = loadAdminBillData;
   loadAdminBillData = async function() { await previousBillDataLoad(); renderReceipts(); };
