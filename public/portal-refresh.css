@@ -229,3 +229,27 @@ html body .submit:hover,html body .button.primary:hover{background:var(--teal-da
 html :focus-visible{outline-color:rgba(214,107,86,.4)}
 @keyframes app-enter{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 @media(prefers-reduced-motion:reduce){html body .main,html body .auth-page,html body .box,html body .auth-panel,html body .top,html body .stat,html body .panel{animation:none}}
+html body .shell{padding-top:18px;padding-bottom:40px}
+html body .topbar{margin-bottom:22px;padding-bottom:12px}
+html body .stats{gap:8px;margin-bottom:12px}
+html body .stat{min-height:76px;padding:13px 15px;border-radius:8px;background:var(--white);box-shadow:none}
+html body .stat strong{font-size:1.35rem}
+html body .view-tabs{margin-bottom:10px;box-shadow:none}
+html body .workspace>.panel{padding:18px;border-radius:8px;box-shadow:0 6px 22px rgba(24,50,52,.045)}
+html body .panel-head{margin-bottom:12px;padding-bottom:10px}
+html body .payment{padding:10px 0}
+html body .admin-billing-panel,html body .management-panel,html body .admin-receipts-panel,html body .csv-panel,html body .health-panel{margin:8px 0}
+html body .main{gap:24px;padding-top:30px;padding-bottom:24px}
+html body .note{display:none}
+html body .box{padding:22px}
+html body .tabs{margin-bottom:14px}
+html body .footer{padding-top:12px}
+html body .admin-slider-tabs{margin-bottom:10px}
+html body .admin-slider-page>.panel{box-shadow:0 6px 22px rgba(24,50,52,.045)}
+html body:before{opacity:.12}
+.dashboard-overview{gap:8px;margin-bottom:12px}
+.overview-bill,.overview-consumption{padding:14px;border-radius:8px;box-shadow:none}
+.overview-amount{margin:10px 0 8px;font-size:1.65rem}
+.overview-progress{margin:8px 0 10px}
+.consumption-chart{height:104px;padding-top:8px}
+@media(max-width:760px){html body .shell{padding-top:14px;padding-bottom:28px}html body .workspace>.panel{padding:16px}html body .main{padding-top:22px;padding-bottom:18px}html body .box{padding:18px}}

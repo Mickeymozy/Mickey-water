@@ -159,6 +159,17 @@ const adminSmsModeControl=document.createElement('label');adminSmsModeControl.cl
   const managementPanels = [shell.querySelector('.management-panel')].filter(Boolean);
   const paymentsPanel = [...shell.querySelectorAll(':scope > .panel')].find(panel => panel.querySelector('#payments'));
   const paymentPanels = [paymentsPanel, shell.querySelector('.csv-panel'), shell.querySelector('.admin-receipts-panel')].filter(Boolean);
+  const unpaidMetric = shell.querySelector('#unpaidBills')?.closest('.unpaid-metric');
+  const partialMetric = shell.querySelector('#partialBills')?.closest('.partial-metric');
+  if (unpaidMetric && partialMetric) {
+    const statusMetric = document.createElement('div');
+    statusMetric.className = 'stat payment-status-summary';
+    statusMetric.innerHTML = '<small>Hali ya bili</small><div class="payment-status-values"></div>';
+    unpaidMetric.classList.remove('stat');
+    partialMetric.classList.remove('stat');
+    statusMetric.querySelector('.payment-status-values').append(unpaidMetric, partialMetric);
+    unpaidMetric.replaceWith(statusMetric);
+  }
   const groups = [
     { label: 'Muhtasari', panels: summaryPanels },
     { label: 'Bili', panels: billingPanels },
@@ -233,7 +244,7 @@ const adminSmsModeControl=document.createElement('label');adminSmsModeControl.cl
     touchStart = null;
   }, { passive: true });
   const style = document.createElement('style');
-  style.textContent = '.admin-slider-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;margin:0 0 16px;padding:5px;border:1px solid var(--line);border-radius:8px;background:var(--white)}.admin-slider-tab{min-width:0;min-height:42px;padding:9px 10px;border:0;border-radius:6px;background:transparent;color:var(--muted);font:700 .76rem "Plus Jakarta Sans","Trebuchet MS",Verdana,sans-serif;cursor:pointer;transition:background .18s,color .18s,transform .18s}.admin-slider-tab:hover{color:var(--teal);transform:translateY(-1px)}.admin-slider-tab.active{background:var(--teal);color:#fff}.admin-slider-page[hidden]{display:none!important}.admin-slider-page:not([hidden]){animation:admin-slider-in .26s ease both}.admin-slider-page.slide-previous:not([hidden]){animation-name:admin-slider-back}@keyframes admin-slider-in{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:translateX(0)}}@keyframes admin-slider-back{from{opacity:0;transform:translateX(-18px)}to{opacity:1;transform:translateX(0)}}@media(max-width:620px){.admin-slider-tabs{grid-template-columns:repeat(2,minmax(0,1fr))}.admin-slider-tab{min-height:40px}}@media(prefers-reduced-motion:reduce){.admin-slider-page:not([hidden]){animation:none}.admin-slider-tab{transition:none}}';
+  style.textContent = '.admin-slider-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;margin:0 0 16px;padding:5px;border:1px solid var(--line);border-radius:8px;background:var(--white)}.admin-slider-tab{min-width:0;min-height:42px;padding:9px 10px;border:0;border-radius:6px;background:transparent;color:var(--muted);font:700 .76rem "Plus Jakarta Sans","Trebuchet MS",Verdana,sans-serif;cursor:pointer;transition:background .18s,color .18s,transform .18s}.admin-slider-tab:hover{color:var(--teal);transform:translateY(-1px)}.admin-slider-tab.active{background:var(--teal);color:#fff}.admin-slider-page[hidden]{display:none!important}.admin-slider-page:not([hidden]){animation:admin-slider-in .26s ease both}.admin-slider-page.slide-previous:not([hidden]){animation-name:admin-slider-back}.payment-status-summary{grid-column:span 2}.payment-status-values{display:flex;align-items:center;gap:18px;margin-top:8px}.payment-status-values .unpaid-metric,.payment-status-values .partial-metric{display:flex;align-items:baseline;gap:7px}.payment-status-values small{margin:0;color:var(--muted);font-size:.62rem}.payment-status-values strong{font-size:1.15rem}@keyframes admin-slider-in{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:translateX(0)}}@keyframes admin-slider-back{from{opacity:0;transform:translateX(-18px)}to{opacity:1;transform:translateX(0)}}@media(max-width:620px){.admin-slider-tabs{grid-template-columns:repeat(2,minmax(0,1fr))}.admin-slider-tab{min-height:40px}.payment-status-summary{grid-column:span 2}.payment-status-values{gap:12px}}@media(prefers-reduced-motion:reduce){.admin-slider-page:not([hidden]){animation:none}.admin-slider-tab{transition:none}}';
   document.head.append(style);
 })();
 </script>
