@@ -177,8 +177,8 @@ const originalTemplateMessageSender=sendMessage;sendMessage=function(record,text
   receiptPageControl.innerHTML = '<span>Risiti kwa A4</span><select id="receiptPerPage" aria-label="Idadi ya risiti kwa karatasi ya A4"><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6" selected>6</option><option value="7">7</option></select>';
   receiptsPanel.querySelector('.receipt-print-actions').prepend(receiptPageControl);
   const blankReceiptCount = receiptsPanel.querySelector('#blankReceiptCount');
-  blankReceiptCount.max = '18';
-  blankReceiptCount.value = '6';
+  blankReceiptCount.max = '9';
+  blankReceiptCount.value = '3';
   blankReceiptCount.step = '1';
   recordsTable.className = 'all-records-panel activity-view active';
   const activityPanel = document.createElement('section');
@@ -600,8 +600,8 @@ const dashboardSmsModeControl=$('smsMode');if(dashboardSmsModeControl){dashboard
   });
   document.getElementById('printBlankReceipts').addEventListener('click', () => {
     const quantity = Number(document.getElementById('blankReceiptCount').value);
-    if (!Number.isInteger(quantity) || quantity < 1 || quantity > maxReceiptBatch()) return toast(`Chagua risiti 1 hadi ${maxReceiptBatch()} (karatasi zisizozidi 3).`);
-    if (!window.MickeyReceiptPrint.print(Array.from({ length: quantity }, () => ({ blank: true })), 'Risiti tupu za kujaza', receiptPrintOptions())) toast('Ruhusu dirisha la kuchapisha lifunguke.');
+    if (!Number.isInteger(quantity) || quantity < 1 || quantity > 9) return toast('Chagua risiti 1 hadi 9 (karatasi zisizozidi 3).');
+    if (!window.MickeyReceiptPrint.print(Array.from({ length: quantity }, () => ({ blank: true })), 'Risiti tupu za kujaza', { perPage: 3 })) toast('Ruhusu dirisha la kuchapisha lifunguke.');
   });
   const previousLoad = load;
   load = async function() { await previousLoad(); renderReceipts(); };

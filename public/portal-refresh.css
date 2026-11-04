@@ -245,6 +245,18 @@ html body .box{padding:22px}
 html body .tabs{margin-bottom:14px}
 html body .footer{padding-top:12px}
 html body .admin-slider-tabs{margin-bottom:10px}
+html body .admin-slider-tabs{display:flex;grid-template-columns:none;align-items:center;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x proximity;scrollbar-width:thin}
+html body .admin-slider-tab{flex:1 0 max(110px,calc(25% - 6px));scroll-snap-align:start;white-space:nowrap}
+html body .all-records-scroll{max-width:100%;overscroll-behavior-x:contain;scrollbar-width:thin}
+html body .all-records-table{font-variant-numeric:tabular-nums}
+html body .all-records-table th,html body .all-records-table td{padding-top:13px;padding-bottom:13px;line-height:1.45}
+html body .all-records-table th:first-child{position:sticky;left:0;z-index:3;min-width:150px}
+html body .all-records-table td:first-child:not([colspan]){position:sticky;left:0;z-index:1;min-width:150px;background:var(--white);box-shadow:1px 0 var(--line)}
+html body .table-customer-name{max-width:190px;overflow:hidden;color:var(--teal-dark);font:700 .8rem "Plus Jakarta Sans","Trebuchet MS",Verdana,sans-serif;text-overflow:ellipsis;white-space:nowrap}
+html body .table-customer-name:hover{text-decoration:underline;text-underline-offset:3px}
+html body .all-records-table .details-action{min-height:34px;padding:7px 11px;font-size:.7rem}
+html[data-theme=dark] body .all-records-table td:first-child:not([colspan]){background:var(--white)}
+@media(max-width:620px){html body .admin-slider-tab{flex:0 0 auto;min-width:124px}}
 html body .admin-slider-page>.panel{box-shadow:0 6px 22px rgba(24,50,52,.045)}
 html body:before{opacity:.12}
 .dashboard-overview{gap:8px;margin-bottom:12px}

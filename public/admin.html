@@ -235,6 +235,11 @@ const adminSmsModeControl=document.createElement('label');adminSmsModeControl.cl
       page.classList.toggle('slide-previous', direction === 'previous');
     });
     activeIndex = nextIndex;
+    if (navigation.scrollWidth > navigation.clientWidth) {
+      const tabBounds = navigation.children[nextIndex].getBoundingClientRect();
+      const navigationBounds = navigation.getBoundingClientRect();
+      navigation.scrollTo({ left: navigation.scrollLeft + tabBounds.left - navigationBounds.left, behavior: 'smooth' });
+    }
     if (focus) navigation.children[nextIndex].focus();
   }
   let touchStart = null;
