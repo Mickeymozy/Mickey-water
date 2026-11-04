@@ -163,7 +163,9 @@ const adminSmsModeControl=document.createElement('label');adminSmsModeControl.cl
   const billingPanels = [shell.querySelector('.admin-billing-panel')].filter(Boolean);
   const managementPanels = [shell.querySelector('.management-panel')].filter(Boolean);
   const paymentsPanel = [...shell.querySelectorAll(':scope > .panel')].find(panel => panel.querySelector('#payments'));
-  const paymentPanels = [paymentsPanel, shell.querySelector('.csv-panel'), shell.querySelector('.admin-receipts-panel')].filter(Boolean);
+  const paymentPanels = [paymentsPanel].filter(Boolean);
+  const csvPanels = [shell.querySelector('.csv-panel')].filter(Boolean);
+  const receiptPanels = [shell.querySelector('.admin-receipts-panel')].filter(Boolean);
   const unpaidMetric = shell.querySelector('#unpaidBills')?.closest('.unpaid-metric');
   const partialMetric = shell.querySelector('#partialBills')?.closest('.partial-metric');
   if (unpaidMetric && partialMetric) {
@@ -179,7 +181,9 @@ const adminSmsModeControl=document.createElement('label');adminSmsModeControl.cl
     { label: 'Muhtasari', panels: summaryPanels },
     { label: 'Bili', panels: billingPanels },
     { label: 'Usimamizi', panels: managementPanels },
-    { label: 'Malipo na risiti', panels: paymentPanels }
+    { label: 'Malipo', panels: paymentPanels },
+    { label: 'Tuma CSV', panels: csvPanels },
+    { label: 'Risiti', panels: receiptPanels }
   ].filter(group => group.panels.length);
   const navigation = document.createElement('nav');
   navigation.className = 'admin-slider-tabs';
@@ -219,7 +223,7 @@ const adminSmsModeControl=document.createElement('label');adminSmsModeControl.cl
     });
   });
   const header = shell.querySelector('.top');
-  header.after(navigation, slider);
+  header.after(shell.querySelector('#managementMessage'), navigation, slider);
   let activeIndex = 0;
   function activate(nextIndex, focus = false) {
     if (nextIndex < 0 || nextIndex >= groups.length || nextIndex === activeIndex) return;

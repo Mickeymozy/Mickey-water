@@ -62,7 +62,8 @@
       const columns = pageItems.length <= 3 ? 1 : 2;
       const rows = Math.ceil(pageItems.length / columns);
       const slips = pageItems.map(item => receiptMarkup(item.blank ? { blank: true } : item.record)).join('');
-      return `<section class="mw-page${pageItems.length > 3 ? ' mw-page-compact' : ''}" style="grid-template-columns:repeat(${columns},minmax(0,1fr));grid-template-rows:repeat(${rows},minmax(0,1fr))">${slips}</section>`;
+      const compact = pageItems.length > 3 && pageItems.some(item => !item.blank);
+      return `<section class="mw-page${compact ? ' mw-page-compact' : ''}" style="grid-template-columns:repeat(${columns},minmax(0,1fr));grid-template-rows:repeat(${rows},minmax(0,1fr))">${slips}</section>`;
     }).join('');
     popup.document.open();
     popup.document.write(`<!doctype html><html lang="sw"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(title)}</title><style>
