@@ -3,7 +3,7 @@
   "short_name": "Mickey Water",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#f0f5f7",
-  "theme_color": "#24758a",
+  "background_color": "#f2f6f2",
+  "theme_color": "#187454",
   "lang": "sw"
 }

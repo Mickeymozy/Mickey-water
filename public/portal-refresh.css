@@ -274,3 +274,41 @@ html body:before{opacity:.12}
 .overview-progress{margin:8px 0 10px}
 .consumption-chart{height:104px;padding-top:8px}
 @media(max-width:760px){html body .shell{padding-top:14px;padding-bottom:28px}html body .workspace>.panel{padding:16px}html body .main{padding-top:22px;padding-bottom:18px}html body .box{padding:18px}}
+
+html body{
+  --ink:#173431;
+  --muted:#607572;
+  --paper:#f2f6f2;
+  --white:#fffefa;
+  --line:#d5e0d9;
+  --teal:#187454;
+  --teal-dark:#10563e;
+  --lime:#e2b44d;
+  --orange:#b9573e;
+  background:linear-gradient(145deg,#e9f2ec 0%,#f7f8f2 58%,#f7f1e5 100%);
+}
+html[data-theme=dark] body{
+  --ink:#e7f1eb;
+  --muted:#afc2b9;
+  --paper:#132421;
+  --white:#1b302c;
+  --line:#35514a;
+  --teal:#65b68b;
+  --teal-dark:#91d6ad;
+  --lime:#e2b44d;
+  --orange:#e18b70;
+  background:linear-gradient(145deg,#132421,#1c312c 58%,#26372f);
+}
+html body .brand .mark,html body .mark{background:var(--teal-dark);color:#fff;box-shadow:4px 4px 0 rgba(226,180,77,.72)}
+html body .admin-brand{display:flex;align-items:center;gap:12px;font:700 1rem "Plus Jakarta Sans","Trebuchet MS",Verdana,sans-serif}
+html body .admin-brand-copy small{display:block;margin-top:3px;color:var(--muted);font:700 .62rem "Plus Jakarta Sans","Trebuchet MS",Verdana,sans-serif;letter-spacing:.08em;text-transform:uppercase}
+html body .admin-intro{display:grid;grid-template-columns:minmax(0,1fr) minmax(210px,.5fr);align-items:end;gap:24px;margin:0 0 16px;padding:20px 22px;border:1px solid var(--line);border-left:3px solid var(--teal);border-radius:8px;background:linear-gradient(120deg,var(--white),rgba(226,180,77,.09))}
+html body .admin-intro .eyebrow{margin:0 0 7px;color:var(--teal-dark);font:700 .65rem "Plus Jakarta Sans","Trebuchet MS",Verdana,sans-serif;letter-spacing:.1em;text-transform:uppercase}
+html body .admin-intro h1{margin:0;color:var(--ink);font:700 clamp(1.65rem,3vw,2.4rem)/1.08 "Plus Jakarta Sans","Trebuchet MS",Verdana,sans-serif}
+html body .admin-intro p{margin:0;color:var(--muted);font:400 .8rem/1.6 "Plus Jakarta Sans","Trebuchet MS",Verdana,sans-serif}
+html body .auth-panel{border-top-color:var(--teal);background:var(--white)}
+html body .auth-page .brand{font-family:"Plus Jakarta Sans","Trebuchet MS",Verdana,sans-serif}
+html body .auth-page .intro{color:var(--muted)}
+html[data-theme=dark] body .admin-intro{background:linear-gradient(120deg,var(--white),rgba(226,180,77,.07))}
+html[data-theme=dark] body .admin-intro h1{color:var(--ink)}
+@media(max-width:720px){html body .admin-intro{grid-template-columns:1fr;gap:8px;padding:17px}.admin-intro p{max-width:48rem}}

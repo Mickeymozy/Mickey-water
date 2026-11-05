@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="sw">
 <head>
-  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#24758a"><link rel="manifest" href="manifest.json"><title>Mickey Water | Anza</title>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#187454"><link rel="manifest" href="manifest.json"><title>Mickey Water | Anza</title>
   <style>
     :root {
       --ink: #17221f;
@@ -371,6 +371,23 @@
     }
   </style>
   <link rel="stylesheet" href="portal-refresh.css">
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      document.querySelector('.eyebrow').textContent = 'Usimamizi wa huduma za maji';
+      document.querySelector('.main h1').innerHTML = 'Bili za maji,<br>kwa uwazi.';
+      document.querySelector('.intro').textContent = 'Mfumo wa bili za maji kwa timu za huduma na wateja: fuatilia matumizi, madeni na malipo katika sehemu moja.';
+      document.querySelector('.note').textContent = 'Kumbukumbu za bili na malipo yaliyoidhinishwa hutenganishwa wazi; risiti hutolewa baada ya uthibitisho wa admin.';
+      const registerTab = document.querySelector('[data-tab="register"]');
+      registerTab.textContent = 'Akaunti mpya';
+      document.querySelector('#register h2').textContent = 'Akaunti za timu';
+      document.querySelector('#register p').textContent = 'Akaunti za staff hutolewa na msimamizi. Wateja hutumia akaunti walizopewa kuona bili na malipo yao.';
+      document.querySelector('#register form').remove();
+      document.querySelector('#registerError').remove();
+      document.querySelector('#registerSuccess').remove();
+      document.querySelector('#loginType').previousElementSibling.textContent = 'AINA YA AKAUNTI';
+      document.querySelector('#loginType option[value="user"]').textContent = 'Mtumiaji / Staff';
+    });
+  </script>
 </head>
 <body><div class="page"><header class="top"><span class="mark">MW</span><span>Mickey Water</span></header><main class="main"><section><p class="eyebrow">Water billing, kwa urahisi</p><h1>Andika.<br>Hifadhi.<br>Tuma.</h1><p class="intro">Mfumo mwepesi wa kutengeneza bills za maji, kufuatilia malipo, na kutuma ujumbe unaoeleweka kwa kila mteja.</p><div class="note">Bill ikiwa haijalipwa hutumwa kama kumbukumbu ya deni. Baada ya malipo, inakuwa risiti.</div></section><section class="box"><nav class="tabs"><button class="tab active" data-tab="login">Ingia</button><button class="tab" data-tab="register">Jisajili</button></nav><div class="form active" id="login"><h2>Karibu tena</h2><p>Endelea na bills zako ulizohifadhi.</p><div id="loginError"></div><form id="loginForm"><div class="field"><label>Aina ya kuingia</label><select id="loginType"><option value="user">Mtumiaji</option><option value="admin">Ingia kama Admin</option></select></div><div class="field"><label>Email</label><input id="loginEmail" type="email" required autocomplete="username"></div><div class="field"><label>Nywila</label><input id="loginPassword" type="password" required autocomplete="current-password"></div><button class="submit">Ingia kwenye mfumo</button></form></div><div class="form" id="register"><h2>Fungua akaunti</h2><p>Anza kuhifadhi bills zako leo.</p><div id="registerError"></div><div id="registerSuccess"></div><form id="registerForm"><div class="field"><label>Jina kamili</label><input id="registerName" required autocomplete="name"></div><div class="field"><label>Email</label><input id="registerEmail" type="email" required autocomplete="email"></div><div class="field"><label>Nywila</label><input id="registerPassword" type="password" minlength="8" required autocomplete="new-password"></div><button class="submit">Unda akaunti</button></form></div></section></main><footer class="footer">Mickey Water · Bills zilizo wazi, mawasiliano rahisi.</footer></div>
 <script>
