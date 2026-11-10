@@ -49,6 +49,14 @@ function audit(req, action, recordId, metadata = {}) {
   });
 }
 
+function recalculateRecordStatus(record) {
+  const approvedTotal = (record.payments || [])
+    .filter(payment => payment.status === 'approved')
+    .reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+  record.status = approvedTotal >= Number(record.total || 0) ? 'Imelipwa' : approvedTotal > 0 ? 'Imelipwa nusu' : 'Haijalipwa';
+  return record.status;
+}
+
 function escapeRegExp(value) {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
@@ -362,12 +370,41 @@ router.post('/:id/payments', async (req, res) => {
     };
     const before = { status: record.status, payments: record.payments.map(item => ({ amount: item.amount, status: item.status, reference: item.reference })) };
     record.payments.push(payment);
+    recalculateRecordStatus(record);
     await record.save();
     audit(req, 'payment_created', record._id, { before, after: { status: record.status, payments: record.payments.map(item => ({ amount: item.amount, status: item.status, reference: item.reference })) } });
     res.status(201).json({ message: 'Malipo yamewasilishwa. Yanasubiri idhini ya admin.', record });
   } catch (error) {
     console.error('Payment create failed:', error.message);
     res.status(500).json({ message: 'Hitilafu ya server' });
+  }
+});
+
+router.delete('/:id/payments/:paymentId', async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Hii hatua inahitaji admin' });
+    }
+    const record = await Record.findById(req.params.id);
+    if (!record) return res.status(404).json({ message: 'Bill haipo' });
+    const payment = record.payments.id(req.params.paymentId);
+    if (!payment) return res.status(404).json({ message: 'Malipo hayapo' });
+
+    const before = {
+      status: record.status,
+      payments: record.payments.map(item => ({ amount: item.amount, status: item.status, reference: item.reference }))
+    };
+    record.payments.pull({ _id: payment._id });
+    recalculateRecordStatus(record);
+    await record.save();
+    audit(req, 'payment_reverted', record._id, {
+      before,
+      after: { status: record.status, payments: record.payments.map(item => ({ amount: item.amount, status: item.status, reference: item.reference })) }
+    });
+    res.json({ message: 'Malipo yameondolewa na bill imebadilishwa kuwa hali sahihi', record });
+  } catch (error) {
+    console.error('Payment revert failed:', error.message);
+    res.status(500).json({ message: 'Imeshindikana kurejesha malipo' });
   }
 });
 
